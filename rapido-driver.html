@@ -1,0 +1,802 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rapido — App Livreur</title>
+<link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --c:#00C9B1;--cd:#00A896;--cl:#D0FAF4;
+  --dk:#1A2332;--dk2:#263147;
+  --wh:#fff;--bg:#0F1923;--bg2:#1A2737;--bg3:#222F3E;
+  --gr:#6B8099;--gr2:#2A3848;
+  --rd:#E24B4A;--gn:#1D9E75;--am:#D4831A;
+  --sh:0 8px 32px rgba(0,0,0,.4);
+  --r:16px;
+}
+body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--wh);min-height:100vh;max-width:420px;margin:0 auto;position:relative;padding-bottom:90px}
+
+/* ── HEADER ── */
+.header{background:var(--bg2);padding:1rem 1.2rem 0.8rem;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--gr2)}
+.logo{display:flex;align-items:center;gap:8px}
+.logo-icon{width:32px;height:32px;background:var(--c);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px}
+.logo-txt{font-family:'Pacifico',cursive;color:var(--wh);font-size:16px}
+.logo-txt span{color:var(--c)}
+.driver-avatar{width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,var(--c),var(--cd));display:flex;align-items:center;justify-content:center;font-weight:900;font-size:15px;color:var(--dk);cursor:pointer}
+
+/* ── STATUS BAR ── */
+.status-bar{background:var(--bg2);padding:.8rem 1.2rem;border-bottom:1px solid var(--gr2)}
+.status-toggle{display:flex;gap:0;background:var(--bg3);border-radius:12px;padding:4px}
+.st-btn{flex:1;padding:9px 0;border-radius:9px;border:none;font-family:'Nunito',sans-serif;font-weight:800;font-size:13px;cursor:pointer;background:transparent;color:var(--gr);transition:.2s;text-align:center}
+.st-btn.online{color:var(--gn)}
+.st-btn.busy{color:var(--am)}
+.st-btn.offline{color:var(--rd)}
+.st-btn.active.online{background:rgba(29,158,117,.2);color:#4AE8A0}
+.st-btn.active.busy{background:rgba(212,131,26,.2);color:#FFA940}
+.st-btn.active.offline{background:rgba(226,75,74,.2);color:#FF7A79}
+
+/* ── STATS ROW ── */
+.stats-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1px;background:var(--gr2)}
+.stat-box{background:var(--bg2);padding:1rem .8rem;text-align:center}
+.stat-val{font-size:22px;font-weight:900;color:var(--wh)}
+.stat-val.cyan{color:var(--c)}
+.stat-label{font-size:10px;font-weight:700;color:var(--gr);text-transform:uppercase;letter-spacing:.8px;margin-top:2px}
+.stat-trend{font-size:11px;color:#4AE8A0;margin-top:2px;font-weight:700}
+
+/* ── TABS ── */
+.tabs{display:flex;background:var(--bg2);border-bottom:1px solid var(--gr2)}
+.tab{flex:1;padding:12px;text-align:center;font-weight:800;font-size:13px;color:var(--gr);cursor:pointer;border-bottom:3px solid transparent;transition:.2s;position:relative}
+.tab.active{color:var(--c);border-color:var(--c)}
+.tab-badge{position:absolute;top:8px;right:calc(50% - 18px);background:var(--rd);color:#fff;font-size:9px;border-radius:8px;padding:1px 5px;font-weight:900}
+
+/* ── SECTIONS ── */
+.section{padding:1rem 1.2rem}
+.sec-title{font-size:10px;font-weight:800;color:var(--gr);text-transform:uppercase;letter-spacing:1.2px;margin-bottom:.8rem}
+
+/* ── JOB CARD ── */
+.job-card{background:var(--bg2);border-radius:var(--r);padding:1.1rem;margin-bottom:.8rem;border:1.5px solid var(--gr2);transition:.2s}
+.job-card.new{border-color:var(--c);animation:glow 2s infinite}
+@keyframes glow{0%,100%{box-shadow:0 0 0 0 rgba(0,201,177,0)}50%{box-shadow:0 0 0 6px rgba(0,201,177,.15)}}
+.job-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px}
+.job-id{font-weight:800;font-size:14px}
+.job-earn{font-size:20px;font-weight:900;color:var(--c)}
+.job-dist{font-size:11px;color:var(--gr);text-align:right;margin-top:2px}
+.route{margin:10px 0}
+.route-row{display:flex;align-items:center;gap:10px;padding:5px 0}
+.route-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.route-dot-c{background:var(--c)}
+.route-dot-r{background:var(--rd)}
+.route-line{width:1px;height:14px;background:var(--gr2);margin-left:4.5px}
+.route-txt{font-size:13px;font-weight:600;color:var(--wh)}
+.route-sub{font-size:11px;color:var(--gr)}
+.job-info{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
+.job-tag{background:var(--bg3);color:var(--gr);padding:4px 10px;border-radius:8px;font-size:11px;font-weight:700}
+.job-actions{display:flex;gap:8px;margin-top:10px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:11px 18px;border-radius:12px;border:none;cursor:pointer;font-family:'Nunito',sans-serif;font-weight:800;font-size:14px;transition:.2s}
+.btn-accept{background:var(--c);color:var(--dk);flex:1}
+.btn-accept:hover{background:var(--cd)}
+.btn-decline{background:var(--bg3);color:var(--gr);border:1.5px solid var(--gr2)}
+.btn-decline:hover{border-color:var(--rd);color:var(--rd)}
+.btn-navigate{background:var(--gn);color:#fff;flex:1}
+.btn-navigate:hover{background:#178A63}
+.btn-complete{background:#1D9E75;color:#fff;flex:1}
+.btn-complete:hover{background:#178A63}
+.btn-sm{padding:7px 14px;font-size:12px;border-radius:10px}
+.btn-outline{background:transparent;color:var(--gr);border:1.5px solid var(--gr2)}
+
+/* ── ACTIVE JOB FULL ── */
+.active-job{background:var(--bg2);border-radius:var(--r);border:2px solid var(--c);padding:1.2rem;margin-bottom:.8rem}
+.active-label{font-size:10px;font-weight:900;color:var(--c);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:.5rem}
+.progress-bar{height:6px;background:var(--gr2);border-radius:3px;margin:12px 0;overflow:hidden}
+.progress-fill{height:100%;background:var(--c);border-radius:3px;transition:width .5s}
+
+/* ── MAP MINI ── */
+.map-mini{border-radius:12px;height:200px;overflow:hidden;margin:10px 0;border:1px solid var(--gr2);position:relative}
+#driver-map{width:100%;height:100%}
+.leaflet-container{background:#1A2737 !important}
+@keyframes move-scooter{0%,100%{left:35%;top:35%}50%{left:42%;top:40%}}
+.map-dot{position:absolute;width:14px;height:14px;border-radius:50%;border:2px solid var(--wh)}
+.map-dot-c{background:var(--c)}
+.map-dot-r{background:var(--rd)}
+.map-lbl{position:absolute;background:var(--bg);border-radius:6px;padding:3px 8px;font-size:10px;font-weight:800;color:var(--wh)}
+
+/* ── HISTORY ── */
+.history-item{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--gr2)}
+.history-item:last-child{border-bottom:none}
+.history-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;margin-right:10px}
+.history-meta{flex:1}
+.history-id{font-weight:700;font-size:13px}
+.history-sub{font-size:11px;color:var(--gr)}
+.history-earn{font-weight:800;font-size:14px;color:var(--c)}
+
+/* ── PROFILE ── */
+.profile-header{background:var(--bg2);border-radius:var(--r);padding:1.5rem;margin-bottom:.8rem;text-align:center}
+.profile-avatar{width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,var(--c),var(--cd));display:flex;align-items:center;justify-content:center;font-weight:900;font-size:28px;color:var(--dk);margin:0 auto 12px}
+.profile-name{font-size:20px;font-weight:900;margin-bottom:4px}
+.profile-sub{font-size:13px;color:var(--gr)}
+.profile-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1px;background:var(--gr2);border-radius:12px;overflow:hidden;margin-top:1rem}
+.profile-stat{background:var(--bg3);padding:.8rem;text-align:center}
+.profile-stat-val{font-size:18px;font-weight:900;color:var(--c)}
+.profile-stat-label{font-size:10px;color:var(--gr);font-weight:700;margin-top:2px}
+.info-row{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--gr2)}
+.info-row:last-child{border-bottom:none}
+.info-label{font-size:13px;color:var(--gr);font-weight:700}
+.info-val{font-size:13px;font-weight:800}
+
+/* ── BADGE ── */
+.badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:800}
+.badge-done{background:rgba(29,158,117,.2);color:#4AE8A0}
+.badge-active{background:rgba(0,201,177,.2);color:var(--c)}
+.badge-pend{background:rgba(212,131,26,.2);color:#FFA940}
+
+/* ── BOTTOM NAV ── */
+.bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:420px;background:var(--bg2);border-top:1px solid var(--gr2);display:flex;padding:.4rem .5rem calc(.4rem + env(safe-area-inset-bottom));z-index:200}
+.bnav-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:.5rem;border:none;background:none;cursor:pointer;color:var(--gr);font-family:'Nunito',sans-serif;font-size:10px;font-weight:700;transition:.2s;border-radius:10px;position:relative}
+.bnav-btn.active{color:var(--c)}
+.bnav-btn:hover{background:var(--gr2)}
+.bnav-icon{font-size:20px}
+
+/* ── TOAST ── */
+.toast{position:fixed;top:80px;left:50%;transform:translateX(-50%) translateY(-80px);background:var(--bg2);color:var(--wh);padding:12px 20px;border-radius:24px;font-weight:700;font-size:13px;z-index:500;transition:.35s;border:1.5px solid var(--c);max-width:300px;text-align:center}
+.toast.show{transform:translateX(-50%) translateY(0)}
+
+/* ── EMPTY ── */
+.empty{text-align:center;padding:3rem 1rem;color:var(--gr)}
+.empty-icon{font-size:52px;margin-bottom:.8rem}
+
+/* ── EARNINGS CHART ── */
+.bar-chart{display:flex;align-items:flex-end;gap:6px;height:90px;padding-top:8px;margin:1rem 0}
+.bar-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px}
+.bar{width:100%;background:var(--c);border-radius:5px 5px 0 0;opacity:.7;min-width:16px}
+.bar.today{opacity:1}
+.bar-lbl{font-size:9px;color:var(--gr);font-weight:700}
+
+/* ── LOGIN SCREEN ── */
+.login-screen{position:fixed;inset:0;background:var(--bg);z-index:9000;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:2rem 1.5rem;overflow-y:auto}
+.login-logo{font-size:54px;margin:1.5rem 0 .4rem}
+.login-brand{font-family:'Pacifico',cursive;font-size:26px;color:var(--wh);margin-bottom:.2rem}
+.login-brand span{color:var(--c)}
+.login-sub{font-size:13px;color:var(--gr);margin-bottom:1.8rem;text-align:center}
+.login-section-lbl{font-size:11px;font-weight:800;color:var(--gr);text-transform:uppercase;letter-spacing:1px;margin-bottom:.7rem;align-self:flex-start;width:100%}
+.driver-pick{width:100%;display:flex;flex-direction:column;gap:.5rem;margin-bottom:1.2rem}
+.driver-opt{background:var(--bg2);border:2px solid var(--gr2);border-radius:14px;padding:13px 16px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:.2s;width:100%}
+.driver-opt:hover{border-color:rgba(0,201,177,.5)}
+.driver-opt.selected{border-color:var(--c);background:rgba(0,201,177,.07)}
+.driver-av{width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,var(--c),var(--cd));display:flex;align-items:center;justify-content:center;font-weight:900;font-size:16px;color:var(--dk);flex-shrink:0}
+.driver-opt-name{font-weight:800;font-size:14px;color:var(--wh)}
+.driver-opt-sub{font-size:11px;color:var(--gr);margin-top:2px}
+.pin-section{width:100%;margin-bottom:1rem}
+.pin-display{background:var(--bg3);border:2px solid var(--gr2);border-radius:12px;padding:14px;text-align:center;font-size:28px;letter-spacing:8px;margin-bottom:1rem;min-height:62px;display:flex;align-items:center;justify-content:center;color:var(--wh);font-weight:900;transition:.2s}
+.pin-display.error{border-color:var(--rd);animation:shake .4s}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.pin-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.pin-key{background:var(--bg3);border:1.5px solid var(--gr2);border-radius:12px;padding:16px;font-size:20px;font-weight:800;color:var(--wh);cursor:pointer;transition:.15s;font-family:'Nunito',sans-serif;width:100%}
+.pin-key:hover{background:var(--bg2);border-color:var(--c);color:var(--c)}
+.pin-key.del{font-size:16px;color:var(--gr)}
+.login-btn-go{width:100%;background:var(--c);color:var(--dk);border:none;border-radius:14px;padding:15px;font-family:'Nunito',sans-serif;font-weight:900;font-size:16px;cursor:pointer;transition:.2s;margin-top:.8rem}
+.login-btn-go:hover:not(:disabled){background:var(--cd)}
+.login-btn-go:disabled{opacity:.4;cursor:not-allowed}
+.login-error{background:rgba(226,75,74,.12);border:1px solid var(--rd);border-radius:10px;padding:10px 14px;font-size:13px;color:var(--rd);font-weight:700;text-align:center;width:100%;margin-top:.5rem}
+</style>
+</head>
+<body>
+
+<!-- ── LOGIN SCREEN ── -->
+<div id="login-screen" class="login-screen">
+  <div class="login-logo">🛵</div>
+  <div class="login-brand">Rapido<span> · Livreur</span></div>
+  <div class="login-sub">Sélectionnez votre profil et entrez votre PIN</div>
+
+  <div class="login-section-lbl">Qui êtes-vous ?</div>
+  <div class="driver-pick" id="driver-pick-list">
+    <!-- populated by JS -->
+  </div>
+
+  <div class="pin-section" id="pin-section" style="display:none">
+    <div class="login-section-lbl">Entrez votre PIN</div>
+    <div class="pin-display" id="pin-display">— — — —</div>
+    <div class="pin-grid">
+      <button class="pin-key" onclick="pinKey('1')">1</button>
+      <button class="pin-key" onclick="pinKey('2')">2</button>
+      <button class="pin-key" onclick="pinKey('3')">3</button>
+      <button class="pin-key" onclick="pinKey('4')">4</button>
+      <button class="pin-key" onclick="pinKey('5')">5</button>
+      <button class="pin-key" onclick="pinKey('6')">6</button>
+      <button class="pin-key" onclick="pinKey('7')">7</button>
+      <button class="pin-key" onclick="pinKey('8')">8</button>
+      <button class="pin-key" onclick="pinKey('9')">9</button>
+      <button class="pin-key" onclick="pinClear()">✕</button>
+      <button class="pin-key" onclick="pinKey('0')">0</button>
+      <button class="pin-key del" onclick="pinBack()">⌫</button>
+    </div>
+    <div id="login-error" style="display:none" class="login-error"></div>
+    <button class="login-btn-go" id="login-btn-go" onclick="submitLogin()" disabled>Connexion →</button>
+  </div>
+</div>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="logo">
+    <div class="logo-icon">🛵</div>
+    <span class="logo-txt">Rapido<span> · Livreur</span></span>
+  </div>
+  <div class="driver-avatar" id="driver-avatar" onclick="switchTab('profile')">A</div>
+</div>
+
+<!-- STATUS TOGGLE -->
+<div class="status-bar">
+  <div class="status-toggle">
+    <button class="st-btn online active" id="st-online" onclick="onStatusClick('online')">🟢 En ligne</button>
+    <button class="st-btn busy" id="st-busy" onclick="onStatusClick('busy')">🔴 En livraison</button>
+    <button class="st-btn offline" id="st-offline" onclick="onStatusClick('offline')">⭕ Hors ligne</button>
+  </div>
+</div>
+
+<!-- STATS -->
+<div class="stats-row">
+  <div class="stat-box">
+    <div class="stat-val cyan" id="earn-today">47.5 DT</div>
+    <div class="stat-label">Gains auj.</div>
+    <div class="stat-trend">+8 DT</div>
+  </div>
+  <div class="stat-box">
+    <div class="stat-val" id="deliveries-today">8</div>
+    <div class="stat-label">Livraisons</div>
+  </div>
+  <div class="stat-box">
+    <div class="stat-val">⭐ <span id="driver-rating">4.9</span></div>
+    <div class="stat-label">Ma note</div>
+  </div>
+</div>
+
+<!-- TABS -->
+<div class="tabs">
+  <div class="tab active" id="tab-jobs" onclick="switchTab('jobs')">
+    Missions
+    <span class="tab-badge" id="jobs-badge">2</span>
+  </div>
+  <div class="tab" id="tab-active" onclick="switchTab('active')">En cours</div>
+  <div class="tab" id="tab-history" onclick="switchTab('history')">Historique</div>
+  <div class="tab" id="tab-profile" onclick="switchTab('profile')">Profil</div>
+</div>
+
+<!-- ── JOBS TAB ── -->
+<div id="tab-content-jobs" class="section">
+  <div class="sec-title">Nouvelles missions disponibles</div>
+  <div id="jobs-list"></div>
+</div>
+
+<!-- ── ACTIVE TAB ── -->
+<div id="tab-content-active" class="section" style="display:none">
+  <div class="sec-title">Livraison en cours</div>
+  <div id="active-content"></div>
+</div>
+
+<!-- ── HISTORY TAB ── -->
+<div id="tab-content-history" class="section" style="display:none">
+  <div class="sec-title">Gains cette semaine</div>
+  <div class="bar-chart" id="earn-chart"></div>
+  <div style="height:1px;background:var(--gr2);margin-bottom:1rem"></div>
+  <div class="sec-title">Livraisons récentes</div>
+  <div id="history-list"></div>
+</div>
+
+<!-- ── PROFILE TAB ── -->
+<div id="tab-content-profile" class="section" style="display:none">
+  <div class="profile-header">
+    <div class="profile-avatar" id="profile-av">A</div>
+    <div class="profile-name" id="profile-name">Ahmed Ben Ali</div>
+    <div class="profile-sub" id="profile-sub">🛵 Scooter · Zone Centre · Gabès</div>
+    <div class="profile-stats">
+      <div class="profile-stat"><div class="profile-stat-val" id="p-total">342</div><div class="profile-stat-label">Total livraisons</div></div>
+      <div class="profile-stat"><div class="profile-stat-val" id="p-rating">4.9⭐</div><div class="profile-stat-label">Note</div></div>
+      <div class="profile-stat"><div class="profile-stat-val" id="p-earn">1,247 DT</div><div class="profile-stat-label">Ce mois</div></div>
+    </div>
+  </div>
+  <div class="active-job" style="border-color:var(--gr2)">
+    <div id="profile-info"></div>
+  </div>
+  <div style="margin-top:1rem;display:flex;flex-direction:column;gap:8px">
+    <button class="btn btn-outline" onclick="showToast('📞 Support Rapido: +216 71 000 000')">📞 Contacter le support</button>
+    <button class="btn btn-decline" onclick="logout()">Déconnexion</button>
+  </div>
+</div>
+
+<!-- BOTTOM NAV -->
+<div class="bottom-nav">
+  <button class="bnav-btn active" id="bnav-jobs" onclick="switchTab('jobs')"><span class="bnav-icon">🎯</span>Missions</button>
+  <button class="bnav-btn" id="bnav-active" onclick="switchTab('active')"><span class="bnav-icon">🛵</span>En cours</button>
+  <button class="bnav-btn" id="bnav-history" onclick="switchTab('history')"><span class="bnav-icon">📊</span>Historique</button>
+  <button class="bnav-btn" id="bnav-profile" onclick="switchTab('profile')"><span class="bnav-icon">👤</span>Profil</button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+<script src="rapido-backend.js"></script>
+<script>
+// ═══════════════════════════════════════════
+// RAPIDO DRIVER APP — async API version
+// ═══════════════════════════════════════════
+
+let driverId    = null;
+let driverData  = null;
+let activeJobId = null;
+let currentTab  = 'jobs';
+let declinedJobs = new Set();
+let lastJobCount = 0;
+let driverMap   = null;
+let driverMarker = null;
+let restaurantMarker = null;
+let customerMarker  = null;
+
+// ── PIN LOGIN ──────────────────────────────
+let selectedDriverId = null;
+let pinValue = '';
+
+async function initApp() {
+  // Populate driver list
+  const drivers = await RapidoDB.getDrivers();
+  document.getElementById('driver-pick-list').innerHTML = drivers.map(d => `
+    <button class="driver-opt" id="dopt-${d.id}" onclick="selectDriver(${d.id})">
+      <div class="driver-av">${d.name[0]}</div>
+      <div>
+        <div class="driver-opt-name">${d.name}</div>
+        <div class="driver-opt-sub">🛵 ${d.vehicle} · Zone ${d.zone} · ⭐${d.rating}</div>
+      </div>
+    </button>
+  `).join('');
+
+  // Check saved session
+  const savedId = parseInt(localStorage.getItem('rapido_driver_id') || '0');
+  if (savedId) {
+    const savedJob = localStorage.getItem('rapido_active_job_' + savedId);
+    driverId = savedId;
+    driverData = await RapidoDB.getDriver(savedId);
+    if (driverData) {
+      if (savedJob) { const o = await RapidoDB.getOrder(savedJob); if (o && o.status === 'on_the_way' && o.driverId === savedId) activeJobId = savedJob; }
+      finishLogin();
+      return;
+    }
+  }
+  document.getElementById('login-screen').style.display = 'flex';
+}
+
+function selectDriver(id) {
+  selectedDriverId = id;
+  document.querySelectorAll('.driver-opt').forEach(o => o.classList.remove('selected'));
+  const el = document.getElementById('dopt-' + id);
+  if (el) el.classList.add('selected');
+  pinValue = '';
+  updatePinDisplay();
+  document.getElementById('pin-section').style.display = 'block';
+  document.getElementById('login-error').style.display = 'none';
+  document.getElementById('pin-display').classList.remove('error');
+}
+
+function pinKey(k) {
+  if (pinValue.length >= 4) return;
+  pinValue += k;
+  updatePinDisplay();
+  if (pinValue.length === 4) document.getElementById('login-btn-go').disabled = false;
+}
+
+function pinBack() {
+  pinValue = pinValue.slice(0, -1);
+  updatePinDisplay();
+  document.getElementById('login-btn-go').disabled = pinValue.length < 4;
+}
+
+function pinClear() {
+  pinValue = '';
+  updatePinDisplay();
+  document.getElementById('login-btn-go').disabled = true;
+}
+
+function updatePinDisplay() {
+  const dots = pinValue.split('').map(() => '●').join(' ');
+  const blanks = Array(4 - pinValue.length).fill('—').join(' ');
+  document.getElementById('pin-display').textContent = (dots + (dots && blanks ? ' ' : '') + blanks) || '— — — —';
+}
+
+async function submitLogin() {
+  if (!selectedDriverId || pinValue.length !== 4) return;
+  document.getElementById('login-btn-go').disabled = true;
+  document.getElementById('login-btn-go').textContent = 'Vérification...';
+
+  const result = await RapidoDB.loginDriver(selectedDriverId, pinValue);
+  if (!result.ok) {
+    const disp = document.getElementById('pin-display');
+    disp.classList.add('error');
+    document.getElementById('login-error').style.display = 'block';
+    document.getElementById('login-error').textContent = '❌ ' + result.error;
+    pinValue = '';
+    updatePinDisplay();
+    document.getElementById('login-btn-go').disabled = true;
+    document.getElementById('login-btn-go').textContent = 'Connexion →';
+    setTimeout(() => disp.classList.remove('error'), 500);
+    return;
+  }
+
+  driverId   = selectedDriverId;
+  driverData = result.driver;
+  localStorage.setItem('rapido_driver_id', driverId);
+
+  // Join socket room
+  const socket = getRapidoSocket ? getRapidoSocket() : null;
+  if (socket) socket.emit('driver:join', { driverId, token: RapidoAuth.getToken() });
+
+  finishLogin();
+}
+
+async function finishLogin() {
+  document.getElementById('login-screen').style.display = 'none';
+  await RapidoDB.updateDriver(driverId, { status: activeJobId ? 'busy' : 'online' });
+  await refreshAll();
+  startWatcher();
+  startGPS();
+}
+
+async function logout() {
+  if (!confirm('Se déconnecter ?')) return;
+  await RapidoDB.updateDriver(driverId, { status: 'offline' });
+  localStorage.removeItem('rapido_driver_id');
+  localStorage.removeItem('rapido_active_job_' + driverId);
+  driverId = null; driverData = null; activeJobId = null;
+  declinedJobs.clear(); pinValue = '';
+  document.getElementById('login-error').style.display = 'none';
+  document.getElementById('pin-section').style.display = 'none';
+  document.querySelectorAll('.driver-opt').forEach(o => o.classList.remove('selected'));
+  updatePinDisplay();
+  document.getElementById('login-screen').style.display = 'flex';
+}
+
+// ── STATUS ────────────────────────────────
+async function setStatus(status) {
+  if (!driverId) return;
+  if (status === 'online' && activeJobId) { showToast('⚠️ Terminez votre livraison d\'abord'); return; }
+  syncStatusBtns(status);
+  await RapidoDB.updateDriver(driverId, { status });
+  const m = { online:'🟢 En ligne — prêt!', busy:'🔴 En livraison', offline:'⭕ Hors ligne' };
+  showToast(m[status] || '');
+}
+
+function syncStatusBtns(status) {
+  document.querySelectorAll('.st-btn').forEach(b => b.classList.remove('active'));
+  const m = { online:'st-online', busy:'st-busy', offline:'st-offline' };
+  if (m[status]) document.getElementById(m[status])?.classList.add('active');
+}
+
+// ── TABS ──────────────────────────────────
+function switchTab(tab) {
+  currentTab = tab;
+  ['jobs','active','history','profile'].forEach(t => {
+    document.getElementById('tab-content-' + t).style.display = t === tab ? 'block' : 'none';
+    document.getElementById('tab-' + t).classList.toggle('active', t === tab);
+    document.getElementById('bnav-' + t).classList.toggle('active', t === tab);
+  });
+  if (tab === 'jobs')    renderJobs();
+  if (tab === 'active')  renderActive();
+  if (tab === 'history') renderHistory();
+  if (tab === 'profile') renderProfile();
+}
+
+// ── LIVE WATCHER ──────────────────────────
+function startWatcher() {
+  onRapidoUpdate(async (event, data) => {
+    if (event === 'order:updated' && data.id === activeJobId) {
+      if (['delivered','cancelled'].includes(data.status)) {
+        activeJobId = null;
+        localStorage.removeItem('rapido_active_job_' + driverId);
+        await RapidoDB.updateDriver(driverId, { status: 'online' });
+        syncStatusBtns('online');
+        showToast(data.status === 'cancelled' ? '⚠️ Commande annulée' : '🎉 Livraison terminée!');
+        switchTab('jobs');
+      }
+    }
+    if (event === 'order:new' || event === 'change') {
+      const jobs = await getAvailableJobs();
+      if (jobs.length > lastJobCount) {
+        showNewJobAlert(jobs.length - lastJobCount);
+        if (!activeJobId && currentTab !== 'jobs') switchTab('jobs');
+      }
+      lastJobCount = jobs.length;
+    }
+    await refreshAll();
+  });
+}
+
+async function getAvailableJobs() {
+  const orders = await RapidoDB.getOrders({ status: 'pending' });
+  return orders.filter(o => !o.driverId && !declinedJobs.has(o.id));
+}
+
+function showNewJobAlert(count) {
+  const old = document.getElementById('new-job-alert');
+  if (old) old.remove();
+  const el = document.createElement('div');
+  el.id = 'new-job-alert';
+  el.style.cssText = 'background:linear-gradient(135deg,rgba(0,201,177,.15),rgba(0,168,150,.08));border:1.5px solid var(--c);border-radius:14px;padding:12px 16px;margin-bottom:.8rem;display:flex;align-items:center;justify-content:space-between;cursor:pointer';
+  el.innerHTML = `<div><div style="font-weight:800;color:var(--c);font-size:14px">🔔 ${count > 1 ? count + ' nouvelles missions!' : 'Nouvelle mission!'}</div><div style="font-size:12px;color:var(--gr)">Appuyez pour voir</div></div><div style="width:10px;height:10px;border-radius:50%;background:var(--c);animation:pulse 1s infinite"></div>`;
+  el.onclick = () => { el.remove(); switchTab('jobs'); };
+  document.getElementById('tab-content-jobs').prepend(el);
+  if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+  setTimeout(() => el?.remove(), 8000);
+}
+
+// ── JOBS ──────────────────────────────────
+async function renderJobs() {
+  if (!driverId) return;
+  const driver = await RapidoDB.getDriver(driverId);
+  const list   = document.getElementById('jobs-list');
+  const badge  = document.getElementById('jobs-badge');
+
+  if (driver?.status === 'offline') {
+    badge.style.display = 'none';
+    list.innerHTML = `<div class="empty"><div class="empty-icon">⭕</div><div style="font-weight:700">Vous êtes hors ligne</div><button class="btn btn-accept" style="margin-top:1rem;width:auto;padding:10px 24px" onclick="setStatus('online')">🟢 Aller en ligne</button></div>`;
+    return;
+  }
+  if (activeJobId) {
+    badge.style.display = 'none';
+    list.innerHTML = `<div class="empty"><div class="empty-icon">🛵</div><div style="font-weight:700">Livraison en cours</div><button class="btn btn-accept" style="margin-top:1rem;width:auto;padding:10px 24px" onclick="switchTab('active')">Voir ma livraison →</button></div>`;
+    return;
+  }
+
+  const available = await getAvailableJobs();
+  lastJobCount = available.length;
+  badge.textContent = available.length;
+  badge.style.display = available.length > 0 ? 'inline' : 'none';
+
+  if (available.length === 0) {
+    list.innerHTML = `<div class="empty"><div class="empty-icon">✅</div><div style="font-weight:700">Aucune mission pour l'instant</div><div style="font-size:12px;margin-top:4px">Vous serez alerté dès qu'une commande arrive</div></div>`;
+    return;
+  }
+
+  const ago = ts => { const m = Math.floor((Date.now()-ts)/60000); return m < 1 ? 'À l\'instant' : m + ' min'; };
+  const earn = o => (o.deliveryFee * 1.8).toFixed(1);
+
+  list.innerHTML = available.map((o, i) => `
+    <div class="job-card ${i===0?'new':''}" id="job-${o.id}">
+      <div class="job-head">
+        <div>
+          <div class="job-id">${o.id}</div>
+          <div style="font-size:12px;color:var(--gr);margin-top:2px">${o.restaurant} · ${ago(o.createdAt)}</div>
+        </div>
+        <div style="text-align:right">
+          <div class="job-earn">+${earn(o)} DT</div>
+          <div class="job-dist">~${(Math.random()*2+0.5).toFixed(1)} km</div>
+        </div>
+      </div>
+      <div class="route">
+        <div class="route-row"><div class="route-dot route-dot-c"></div><div><div class="route-txt">${o.restaurant}</div><div class="route-sub">Collecte de la commande</div></div></div>
+        <div style="margin-left:4.5px"><div class="route-line"></div></div>
+        <div class="route-row"><div class="route-dot route-dot-r"></div><div><div class="route-txt" style="font-size:12px">${o.address}</div><div class="route-sub">Livrer à: ${o.customer} · ${o.phone}</div></div></div>
+      </div>
+      <div class="job-info">
+        <span class="job-tag">💰 ${(o.total+o.deliveryFee).toFixed(1)} DT</span>
+        <span class="job-tag">📦 ${o.items.length} art.</span>
+      </div>
+      <div class="job-actions">
+        <button class="btn btn-accept" onclick="acceptJob('${o.id}')">✅ Accepter · +${earn(o)} DT</button>
+        <button class="btn btn-decline btn-sm" onclick="declineJob('${o.id}')">✕</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+async function acceptJob(orderId) {
+  const order = await RapidoDB.getOrder(orderId);
+  if (!order || order.status !== 'pending' || order.driverId) { showToast('⚠️ Commande déjà prise'); await renderJobs(); return; }
+  await RapidoDB.updateOrder(orderId, { driverId, status: 'on_the_way', assignedAt: Date.now() });
+  await RapidoDB.updateDriver(driverId, { status: 'busy' });
+  activeJobId = orderId;
+  localStorage.setItem('rapido_active_job_' + driverId, orderId);
+  declinedJobs.delete(orderId);
+  syncStatusBtns('busy');
+  showToast('✅ Mission acceptée! En route 🛵');
+  await refreshAll();
+  setTimeout(() => switchTab('active'), 600);
+}
+
+function declineJob(orderId) {
+  declinedJobs.add(orderId);
+  const card = document.getElementById('job-' + orderId);
+  if (card) { card.style.transition = 'opacity .3s,transform .3s'; card.style.opacity = '0'; card.style.transform = 'translateX(30px)'; setTimeout(() => renderJobs(), 320); }
+  else renderJobs();
+}
+
+// ── ACTIVE DELIVERY + LEAFLET MAP ────────
+let _leafletMap = null;
+let _restMarker = null, _custMarker = null, _driverMarker2 = null;
+
+async function renderActive() {
+  const container = document.getElementById('active-content');
+  if (!activeJobId) {
+    container.innerHTML = `<div class="empty"><div class="empty-icon">🛵</div><div style="font-weight:700">Pas de livraison en cours</div><div style="font-size:12px;margin-top:4px">Acceptez une mission dans Missions</div></div>`;
+    return;
+  }
+  const order = await RapidoDB.getOrder(activeJobId);
+  if (!order || ['delivered','cancelled'].includes(order.status)) {
+    activeJobId = null; localStorage.removeItem('rapido_active_job_' + driverId);
+    container.innerHTML = `<div class="empty"><div class="empty-icon">🎉</div><div style="font-weight:700">Livraison terminée!</div></div>`;
+    syncStatusBtns('online'); await RapidoDB.updateDriver(driverId, { status: 'online' });
+    return;
+  }
+
+  const pickingUp   = !localStorage.getItem('rapido_picked_' + activeJobId);
+  const earn        = (order.deliveryFee * 1.8).toFixed(1);
+  const elapsed     = Math.floor((Date.now() - order.assignedAt) / 60000);
+  const rest        = await RapidoDB.getRestaurant(order.restaurantId);
+
+  container.innerHTML = `
+    <div class="active-job">
+      <div class="active-label">🛵 Livraison en cours · ${elapsed} min</div>
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
+        <div><div style="font-size:18px;font-weight:900">${order.id}</div><div style="font-size:13px;color:var(--gr)">${order.restaurant}</div></div>
+        <div style="font-size:20px;font-weight:900;color:var(--c)">+${earn} DT</div>
+      </div>
+      <!-- Leaflet map -->
+      <div class="map-mini"><div id="driver-map" style="height:200px;border-radius:12px"></div></div>
+      <div style="background:${pickingUp?'rgba(212,131,26,.12)':'rgba(0,201,177,.1)'};border:1.5px solid ${pickingUp?'var(--am)':'var(--c)'};border-radius:10px;padding:10px 14px;margin:10px 0;font-weight:700;font-size:13px;color:${pickingUp?'#FFA940':'var(--c)'}">
+        ${pickingUp ? '🏪 Allez au restaurant récupérer la commande' : '🏠 Livrez la commande au client'}
+      </div>
+    </div>
+    <div class="active-job" style="border-color:var(--gr2)">
+      <div style="font-size:12px;font-weight:800;color:var(--gr);margin-bottom:8px">INFOS CLIENT</div>
+      <div class="info-row"><span class="info-label">Nom</span><span class="info-val">${order.customer}</span></div>
+      <div class="info-row"><span class="info-label">Adresse</span><span class="info-val" style="font-size:12px;text-align:right;max-width:200px">${order.address}</span></div>
+      <div class="info-row" style="border-bottom:none"><span class="info-label">À encaisser</span><span class="info-val" style="color:var(--c)">${(order.total+order.deliveryFee).toFixed(1)} DT</span></div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <a href="tel:${order.phone}" class="btn btn-navigate" style="text-decoration:none;flex:1">📞 Appeler</a>
+      ${pickingUp
+        ? `<button class="btn btn-complete" style="flex:2" onclick="confirmPickup('${order.id}')">✅ Récupéré au resto</button>`
+        : `<button class="btn btn-complete" style="flex:2" onclick="completeDelivery('${order.id}')">✅ Livré!</button>`}
+    </div>
+  `;
+
+  // Init Leaflet map
+  setTimeout(() => {
+    if (_leafletMap) { _leafletMap.remove(); _leafletMap = null; }
+    const restLat  = rest?.lat  || 33.8828;
+    const restLng  = rest?.lng  || 10.0982;
+    const custLat  = 33.8795 + (Math.random()-.5)*.01;  // Demo: random near Gabès
+    const custLng  = 10.0948 + (Math.random()-.5)*.01;
+    const drvLat   = restLat + (Math.random()-.5)*.005;
+    const drvLng   = restLng + (Math.random()-.5)*.005;
+
+    _leafletMap = L.map('driver-map', { zoomControl: false, attributionControl: false }).setView([restLat, restLng], 14);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(_leafletMap);
+
+    const iconOpts = (emoji, color) => L.divIcon({
+      html: `<div style="background:${color};width:36px;height:36px;border-radius:50%;border:3px solid white;display:flex;align-items:center;justify-content:center;font-size:16px;box-shadow:0 2px 8px rgba(0,0,0,.3)">${emoji}</div>`,
+      iconSize: [36, 36], iconAnchor: [18, 18], className: ''
+    });
+
+    L.marker([restLat, restLng], { icon: iconOpts('🍽️','#00C9B1') }).addTo(_leafletMap).bindPopup(order.restaurant);
+    L.marker([custLat, custLng], { icon: iconOpts('📍','#E24B4A') }).addTo(_leafletMap).bindPopup(order.customer);
+    _driverMarker2 = L.marker([drvLat, drvLng], { icon: iconOpts('🛵','#1A2332') }).addTo(_leafletMap);
+
+    // Draw route line
+    L.polyline([[restLat,restLng],[drvLat,drvLng],[custLat,custLng]], { color:'#00C9B1', weight:3, opacity:.7, dashArray:'8 4' }).addTo(_leafletMap);
+
+    // Fit all markers
+    _leafletMap.fitBounds([[restLat,restLng],[custLat,custLng],[drvLat,drvLng]], { padding: [30,30] });
+  }, 100);
+}
+
+async function confirmPickup(orderId) {
+  localStorage.setItem('rapido_picked_' + orderId, '1');
+  showToast('📦 Commande récupérée — en route vers le client!');
+  await renderActive();
+}
+
+async function completeDelivery(orderId) {
+  const order  = await RapidoDB.getOrder(orderId);
+  if (!order) return;
+  const driver = await RapidoDB.getDriver(driverId);
+  const earned = order.deliveryFee * 1.8;
+  await RapidoDB.updateOrder(orderId, { status: 'delivered', deliveredAt: Date.now() });
+  await RapidoDB.updateDriver(driverId, { status: 'online', earningsToday: (driver.earningsToday||0) + earned, totalDeliveries: (driver.totalDeliveries||0) + 1 });
+  localStorage.removeItem('rapido_picked_' + orderId);
+  activeJobId = null;
+  localStorage.removeItem('rapido_active_job_' + driverId);
+  syncStatusBtns('online');
+  if (_leafletMap) { _leafletMap.remove(); _leafletMap = null; }
+  showToast('🎉 Livraison terminée! +' + earned.toFixed(1) + ' DT 💪');
+  await refreshAll();
+  setTimeout(() => switchTab('jobs'), 900);
+}
+
+// ── GPS BROADCAST ─────────────────────────
+function startGPS() {
+  if (!navigator.geolocation) return;
+  navigator.geolocation.watchPosition(pos => {
+    const { latitude: lat, longitude: lng } = pos.coords;
+    RapidoDB.updateDriver(driverId, { lat, lng });
+    if (typeof broadcastDriverPosition !== 'undefined') broadcastDriverPosition(driverId, lat, lng);
+    if (_driverMarker2) _driverMarker2.setLatLng([lat, lng]);
+  }, null, { enableHighAccuracy: true, maximumAge: 5000 });
+}
+
+// ── HISTORY ──────────────────────────────
+async function renderHistory() {
+  if (!driverId) return;
+  const allOrders = await RapidoDB.getOrders();
+  const delivered = allOrders.filter(o => o.driverId === driverId && o.status === 'delivered');
+  const driver    = await RapidoDB.getDriver(driverId);
+  const days = ['Lun','Mar','Mer','Jeu','Ven','Sam','Auj'];
+  const vals = [38,42,29,55,47,62, Math.round(driver?.earningsToday||0)];
+  const max  = Math.max(...vals, 1);
+  document.getElementById('earn-chart').innerHTML = days.map((d,i) => `
+    <div class="bar-col"><div class="bar ${i===6?'today':''}" style="height:${vals[i]/max*86}px"></div><div class="bar-lbl">${d}</div></div>
+  `).join('');
+  document.getElementById('history-list').innerHTML = delivered.length === 0
+    ? '<div class="empty"><div class="empty-icon">📦</div><div>Aucune livraison</div></div>'
+    : delivered.slice(0,15).map(o => {
+        const t = new Date(o.deliveredAt || o.createdAt);
+        const ts = t.getHours() + ':' + String(t.getMinutes()).padStart(2,'0');
+        return `<div class="history-item">
+          <div class="history-icon">🛵</div>
+          <div class="history-meta"><div class="history-id">${o.id}</div><div class="history-sub">${o.restaurant} · ${ts}</div>${o.rating?`<div>${'⭐'.repeat(o.rating)}</div>`:''}</div>
+          <div class="history-earn">+${(o.deliveryFee*1.8).toFixed(1)} DT</div>
+        </div>`;
+      }).join('');
+}
+
+// ── PROFILE ───────────────────────────────
+async function renderProfile() {
+  if (!driverId) return;
+  const driver = await RapidoDB.getDriver(driverId);
+  if (!driver) return;
+  document.getElementById('profile-av').textContent   = driver.name[0];
+  document.getElementById('profile-name').textContent = driver.name;
+  document.getElementById('profile-sub').textContent  = `🛵 ${driver.vehicle} · Zone ${driver.zone}`;
+  document.getElementById('p-total').textContent  = driver.totalDeliveries;
+  document.getElementById('p-rating').textContent = driver.rating + '⭐';
+  document.getElementById('p-earn').textContent   = (driver.earningsToday * 28).toFixed(0) + ' DT';
+  const stL = { online:'En ligne', busy:'En livraison', offline:'Hors ligne' };
+  document.getElementById('profile-info').innerHTML = `
+    <div class="info-row"><span class="info-label">Téléphone</span><span class="info-val">${driver.phone}</span></div>
+    <div class="info-row"><span class="info-label">Véhicule</span><span class="info-val">${driver.vehicle}</span></div>
+    <div class="info-row"><span class="info-label">Zone</span><span class="info-val">${driver.zone}</span></div>
+    <div class="info-row"><span class="info-label">Gains aujourd'hui</span><span class="info-val" style="color:var(--c)">${(driver.earningsToday||0).toFixed(1)} DT</span></div>
+    <div class="info-row" style="border-bottom:none"><span class="info-label">Statut</span><span class="info-val">${stL[driver.status]||driver.status}</span></div>
+  `;
+}
+
+// ── REFRESH ───────────────────────────────
+async function refreshAll() {
+  const driver = await RapidoDB.getDriver(driverId);
+  if (!driver) return;
+  driverData = driver;
+  document.getElementById('driver-avatar').textContent  = driver.name[0];
+  document.getElementById('earn-today').textContent     = (driver.earningsToday||0).toFixed(1) + ' DT';
+  document.getElementById('deliveries-today').textContent = driver.deliveriesToday || 0;
+  document.getElementById('driver-rating').textContent  = driver.rating;
+  syncStatusBtns(driver.status);
+  if (currentTab === 'jobs')    await renderJobs();
+  if (currentTab === 'active')  await renderActive();
+}
+
+// ── TOAST ─────────────────────────────────
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+// ── BUTTON ONCLICK HELPERS ────────────────
+// Called by status bar buttons (need non-async wrappers for onclick)
+function onStatusClick(status) { setStatus(status); }
+
+// ── INIT ──────────────────────────────────
+initApp();
+</script>
+</body>
+</html>

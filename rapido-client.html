@@ -1,0 +1,810 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rapido — Commander à manger</title>
+<link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --c:#00C9B1;--cd:#00A896;--cl:#D0FAF4;
+  --dk:#1A2332;--dk2:#263147;
+  --wh:#fff;--bg:#F4FDFB;
+  --gr:#8A9BB0;--gr2:#E8F0EE;
+  --rd:#E24B4A;--gn:#1D9E75;--am:#BA7517;
+  --sh:0 8px 32px rgba(0,201,177,0.15);
+  --r:18px;
+}
+body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--dk);min-height:100vh;overflow-x:hidden}
+
+/* ── TOP NAV ── */
+.topnav{background:var(--dk);padding:0 1.5rem;height:60px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:200;box-shadow:0 2px 20px rgba(0,0,0,0.3)}
+.logo{display:flex;align-items:center;gap:10px;text-decoration:none}
+.logo-icon{width:34px;height:34px;background:var(--c);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px}
+.logo-txt{font-family:'Pacifico',cursive;color:var(--wh);font-size:18px}
+.logo-txt span{color:var(--c)}
+.nav-right{display:flex;align-items:center;gap:12px}
+.nav-btn{background:none;border:1.5px solid rgba(255,255,255,0.15);color:var(--wh);padding:6px 14px;border-radius:20px;font-family:'Nunito',sans-serif;font-weight:700;font-size:13px;cursor:pointer;transition:.2s}
+.nav-btn:hover{border-color:var(--c);color:var(--c)}
+.cart-btn{background:var(--c);border:none;color:var(--dk);padding:8px 18px;border-radius:20px;font-family:'Nunito',sans-serif;font-weight:800;font-size:13px;cursor:pointer;display:flex;align-items:center;gap:6px;transition:.2s}
+.cart-btn:hover{background:var(--cd);transform:translateY(-1px)}
+.cart-count{background:var(--rd);color:#fff;width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:900}
+
+/* ── HERO ── */
+.hero{background:var(--dk);padding:2.5rem 1.5rem 3.5rem;position:relative;overflow:hidden}
+.hero-bg{position:absolute;inset:0;pointer-events:none}
+.hero-circle{position:absolute;border-radius:50%;background:var(--c);opacity:.06}
+.hero-tag{display:inline-flex;align-items:center;gap:6px;background:rgba(0,201,177,.15);border:1px solid rgba(0,201,177,.3);color:var(--c);padding:5px 14px;border-radius:20px;font-size:12px;font-weight:700;margin-bottom:1rem}
+.hero h1{font-size:clamp(24px,5vw,38px);font-weight:900;color:var(--wh);line-height:1.1;margin-bottom:.6rem}
+.hero h1 span{color:var(--c)}
+.hero p{color:#8EA0B5;font-size:15px;margin-bottom:1.5rem;max-width:480px}
+.search-bar{display:flex;gap:8px;max-width:520px}
+.search-bar input{flex:1;padding:12px 18px;border-radius:14px;border:none;font-family:'Nunito',sans-serif;font-size:14px;background:rgba(255,255,255,.08);color:var(--wh);outline:none}
+.search-bar input::placeholder{color:#8EA0B5}
+.search-bar input:focus{background:rgba(255,255,255,.12)}
+.search-btn{background:var(--c);border:none;border-radius:14px;padding:0 20px;color:var(--dk);font-size:18px;cursor:pointer;font-weight:900;transition:.2s}
+.search-btn:hover{background:var(--cd)}
+.hero-stats{display:flex;gap:2rem;margin-top:1.5rem}
+.h-stat{color:var(--wh)}
+.h-stat strong{font-size:22px;font-weight:900;color:var(--c)}
+.h-stat span{display:block;font-size:11px;color:#8EA0B5;font-weight:600;margin-top:1px}
+
+/* ── CATS ── */
+.section{padding:1.5rem 1.5rem}
+.section-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem}
+.section-title{font-size:11px;font-weight:800;color:var(--gr);text-transform:uppercase;letter-spacing:1.5px}
+.cats{display:flex;gap:10px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none}
+.cats::-webkit-scrollbar{display:none}
+.cat{display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;flex-shrink:0;transition:.2s}
+.cat-icon{width:56px;height:56px;border-radius:16px;background:var(--wh);border:2px solid var(--gr2);display:flex;align-items:center;justify-content:center;font-size:24px;transition:.2s}
+.cat.active .cat-icon,.cat:hover .cat-icon{background:var(--c);border-color:var(--c)}
+.cat-name{font-size:11px;font-weight:700;color:var(--gr);transition:.2s}
+.cat.active .cat-name,.cat:hover .cat-name{color:var(--cd)}
+
+/* ── RESTAURANT CARDS ── */
+.rest-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:1rem}
+.rest-card{background:var(--wh);border-radius:var(--r);overflow:hidden;cursor:pointer;transition:.25s;border:1.5px solid transparent}
+.rest-card:hover{transform:translateY(-4px);box-shadow:var(--sh);border-color:var(--c)}
+.rest-img{height:120px;display:flex;align-items:center;justify-content:center;font-size:50px;position:relative}
+.rest-img-1{background:linear-gradient(135deg,#FFE4CC,#FFB380)}
+.rest-img-2{background:linear-gradient(135deg,#FFECD2,#FCB69F)}
+.rest-img-3{background:linear-gradient(135deg,#D4FC79,#96E6A1)}
+.rest-img-4{background:linear-gradient(135deg,#FFF176,#FFD54F)}
+.rest-img-5{background:linear-gradient(135deg,#B2F7EF,#7DDBD4)}
+.rest-img-6{background:linear-gradient(135deg,#F3D9F4,#E2ADEF)}
+.rest-badge{position:absolute;top:10px;right:10px}
+.badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:800}
+.badge-open{background:#D0FAF4;color:#0F6E56}
+.badge-busy{background:#FAEEDA;color:var(--am)}
+.badge-closed{background:#FCEBEB;color:var(--rd)}
+.rest-info{padding:14px}
+.rest-name{font-size:16px;font-weight:800;margin-bottom:4px}
+.rest-sub{font-size:12px;color:var(--gr);display:flex;align-items:center;gap:8px}
+.rest-sub span{display:flex;align-items:center;gap:3px}
+.rest-tags{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+.rest-tag{background:var(--gr2);color:var(--gr);padding:2px 8px;border-radius:8px;font-size:11px;font-weight:700}
+
+/* ── MODALS ── */
+.overlay{position:fixed;inset:0;background:rgba(10,20,30,.7);z-index:300;display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:.3s;backdrop-filter:blur(4px)}
+.overlay.open{opacity:1;pointer-events:all}
+.modal{background:var(--wh);border-radius:24px 24px 0 0;width:100%;max-width:620px;max-height:92vh;overflow-y:auto;transform:translateY(100%);transition:.35s cubic-bezier(.34,1.56,.64,1)}
+.overlay.open .modal{transform:translateY(0)}
+.modal-head{padding:1.5rem 1.5rem 1rem;display:flex;align-items:flex-start;justify-content:space-between;border-bottom:1px solid var(--gr2);position:sticky;top:0;background:var(--wh);z-index:5}
+.modal-title{font-size:20px;font-weight:800}
+.modal-close{width:32px;height:32px;border-radius:50%;background:var(--gr2);border:none;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.modal-body{padding:1.5rem}
+
+/* ── MENU ── */
+.menu-cat{margin-bottom:1.5rem}
+.menu-cat-title{font-size:12px;font-weight:800;color:var(--gr);text-transform:uppercase;letter-spacing:1px;margin-bottom:.8rem}
+.menu-item{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--gr2)}
+.menu-item:last-child{border-bottom:none}
+.menu-item-info{flex:1}
+.menu-item-name{font-weight:700;font-size:14px;margin-bottom:2px}
+.menu-item-desc{font-size:12px;color:var(--gr);line-height:1.4}
+.menu-item-price{font-size:15px;font-weight:800;color:var(--cd);margin:0 14px;flex-shrink:0}
+.add-btn{width:30px;height:30px;border-radius:50%;background:var(--c);border:none;color:var(--dk);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-weight:900;transition:.2s;flex-shrink:0}
+.add-btn:hover{background:var(--cd);transform:scale(1.1)}
+
+/* ── CART ── */
+.cart-item{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--gr2)}
+.cart-item:last-child{border-bottom:none}
+.cart-item-name{font-weight:700;font-size:14px}
+.cart-item-price{font-size:14px;font-weight:800;color:var(--cd)}
+.cart-qty{display:flex;align-items:center;gap:8px}
+.qty-btn{width:26px;height:26px;border-radius:50%;border:1.5px solid var(--gr2);background:var(--wh);cursor:pointer;font-size:14px;font-weight:800;color:var(--dk);display:flex;align-items:center;justify-content:center;transition:.2s}
+.qty-btn:hover{border-color:var(--c);color:var(--c)}
+.qty-num{font-weight:800;font-size:14px;min-width:16px;text-align:center}
+.total-row{display:flex;justify-content:space-between;font-size:14px;padding:8px 0;color:var(--gr)}
+.total-row.grand{font-size:18px;font-weight:800;color:var(--dk);border-top:2px solid var(--gr2);margin-top:4px;padding-top:12px}
+
+/* ── TRACKING ── */
+.track-card{background:var(--wh);border-radius:var(--r);padding:1.5rem;border:1.5px solid var(--c)}
+.map-mock{background:linear-gradient(135deg,#E0F5F0,#C5EDE6);border-radius:14px;height:200px;position:relative;overflow:hidden;margin:1rem 0}
+.map-road{position:absolute;background:rgba(255,255,255,.55);border-radius:4px}
+.map-road-h{height:10px;left:0;right:0}
+.map-road-v{width:10px;top:0;bottom:0}
+.map-pin{position:absolute;width:22px;height:22px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);border:3px solid var(--wh);box-shadow:0 2px 8px rgba(0,0,0,.2)}
+.map-scooter{position:absolute;width:36px;height:36px;background:var(--dk);border-radius:50%;border:3px solid var(--c);display:flex;align-items:center;justify-content:center;font-size:16px;animation:ping 2s infinite;box-shadow:0 0 0 0 rgba(0,201,177,.4)}
+@keyframes ping{0%,100%{box-shadow:0 0 0 0 rgba(0,201,177,.4)}50%{box-shadow:0 0 0 12px rgba(0,201,177,0)}}
+.map-lbl{position:absolute;background:var(--wh);border-radius:8px;padding:4px 10px;font-size:11px;font-weight:800;box-shadow:0 2px 8px rgba(0,0,0,.1);color:var(--dk)}
+.steps{display:flex;align-items:center;margin:1rem 0}
+.step{flex:1;text-align:center;position:relative}
+.step-dot{width:30px;height:30px;border-radius:50%;margin:0 auto 6px;display:flex;align-items:center;justify-content:center;font-size:13px;border:2px solid var(--gr2);background:var(--wh);position:relative;z-index:1}
+.step-dot.done{background:var(--c);border-color:var(--c);color:var(--dk)}
+.step-dot.active{background:var(--wh);border-color:var(--c);color:var(--c)}
+.step-line{position:absolute;top:15px;left:50%;width:100%;height:3px;background:var(--gr2);z-index:0}
+.step-line.done{background:var(--c)}
+.step-label{font-size:11px;font-weight:700;color:var(--gr)}
+.step-label.done,.step-label.active{color:var(--dk)}
+
+/* ── BUTTONS ── */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:13px 24px;border-radius:14px;border:none;cursor:pointer;font-family:'Nunito',sans-serif;font-weight:800;font-size:15px;transition:.2s;text-decoration:none;width:100%}
+.btn-primary{background:var(--c);color:var(--dk)}
+.btn-primary:hover:not(:disabled){background:var(--cd);transform:translateY(-1px)}
+.btn-primary:disabled{opacity:.5;cursor:not-allowed}
+.btn-outline{background:transparent;color:var(--dk);border:2px solid var(--gr2)}
+.btn-outline:hover{border-color:var(--c);color:var(--cd)}
+
+/* ── FORM ── */
+.form-label{font-size:13px;font-weight:700;color:var(--dk);margin-bottom:6px;display:block}
+.form-control{width:100%;padding:11px 14px;border-radius:12px;border:2px solid var(--gr2);font-family:'Nunito',sans-serif;font-size:14px;color:var(--dk);background:var(--wh);outline:none;transition:.2s;margin-bottom:12px}
+.form-control:focus{border-color:var(--c)}
+
+/* ── RATING ── */
+.stars{display:flex;gap:4px}
+.star{font-size:24px;cursor:pointer;transition:.15s;opacity:.3}
+.star.on{opacity:1}
+
+/* ── TOAST ── */
+.toast{position:fixed;bottom:2rem;left:50%;transform:translateX(-50%) translateY(100px);background:var(--dk);color:var(--wh);padding:12px 24px;border-radius:30px;font-weight:700;font-size:14px;z-index:500;transition:.35s cubic-bezier(.34,1.56,.64,1);border-left:4px solid var(--c)}
+.toast.show{transform:translateX(-50%) translateY(0)}
+
+/* ── LINK BAR ── */
+.app-links{background:var(--dk);padding:1rem 1.5rem;display:flex;align-items:center;justify-content:center;gap:1rem;flex-wrap:wrap}
+.app-link{color:var(--gr);font-size:13px;font-weight:700;text-decoration:none;transition:.2s}
+.app-link:hover{color:var(--c)}
+.app-link-sep{color:rgba(255,255,255,.1)}
+
+/* ── STATES ── */
+.empty{text-align:center;padding:3rem 1rem;color:var(--gr)}
+.empty-icon{font-size:48px;margin-bottom:.8rem}
+.empty-txt{font-size:15px;font-weight:700}
+
+@media(max-width:480px){
+  .hero h1{font-size:26px}
+  .rest-grid{grid-template-columns:1fr}
+  .hero-stats{gap:1rem}
+}
+</style>
+</head>
+<body>
+
+<nav class="topnav">
+  <a class="logo" href="#">
+    <div class="logo-icon">🛵</div>
+    <span class="logo-txt">Rapido<span> Delivery</span></span>
+  </a>
+  <div class="nav-right">
+    <button class="nav-btn" onclick="showTrackModal()">📍 Suivre ma commande</button>
+    <button class="cart-btn" onclick="showCartModal()">
+      🛒 Panier
+      <span class="cart-count" id="cart-count">0</span>
+    </button>
+  </div>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-bg">
+    <div class="hero-circle" style="width:300px;height:300px;top:-100px;right:-80px"></div>
+    <div class="hero-circle" style="width:150px;height:150px;bottom:-60px;right:200px"></div>
+  </div>
+  <div class="hero-tag">📍 Gabès, Tunisie · Livraison 7j/7</div>
+  <h1>Commandez<br>les meilleurs <span>restos</span> de Gabès</h1>
+  <p>Livraison rapide à domicile · Paiement à la livraison · Suivi en temps réel</p>
+  <div class="search-bar">
+    <input id="search-input" type="text" placeholder="Chercher un restaurant ou un plat..." oninput="filterRestaurants(this.value)"/>
+    <button class="search-btn">🔍</button>
+  </div>
+  <div class="hero-stats">
+    <div class="h-stat"><strong id="stat-rests">6</strong><span>Restaurants</span></div>
+    <div class="h-stat"><strong id="stat-orders">142</strong><span>Commandes auj.</span></div>
+    <div class="h-stat"><strong>~20 min</strong><span>Délai moyen</span></div>
+  </div>
+</div>
+
+<!-- CATEGORIES -->
+<div class="section">
+  <div class="section-head"><div class="section-title">Catégories</div></div>
+  <div class="cats" id="cats-bar">
+    <div class="cat active" onclick="setCategory(this,'')">
+      <div class="cat-icon">🍽️</div>
+      <div class="cat-name">Tout</div>
+    </div>
+    <div class="cat" onclick="setCategory(this,'Pizza')">
+      <div class="cat-icon">🍕</div>
+      <div class="cat-name">Pizza</div>
+    </div>
+    <div class="cat" onclick="setCategory(this,'Sandwiches')">
+      <div class="cat-icon">🥙</div>
+      <div class="cat-name">Sandwichs</div>
+    </div>
+    <div class="cat" onclick="setCategory(this,'Burgers')">
+      <div class="cat-icon">🍔</div>
+      <div class="cat-name">Burgers</div>
+    </div>
+    <div class="cat" onclick="setCategory(this,'Local')">
+      <div class="cat-icon">🧆</div>
+      <div class="cat-name">Local</div>
+    </div>
+    <div class="cat" onclick="setCategory(this,'Healthy')">
+      <div class="cat-icon">🥗</div>
+      <div class="cat-name">Healthy</div>
+    </div>
+    <div class="cat" onclick="setCategory(this,'Drinks')">
+      <div class="cat-icon">☕</div>
+      <div class="cat-name">Boissons</div>
+    </div>
+  </div>
+</div>
+
+<!-- RESTAURANTS -->
+<div class="section" style="padding-top:0">
+  <div class="section-head">
+    <div class="section-title" id="rest-title">Tous les restaurants</div>
+  </div>
+  <div class="rest-grid" id="rest-grid"></div>
+</div>
+
+<!-- ── RESTAURANT MODAL ── -->
+<div class="overlay" id="rest-overlay" onclick="closeRestModal(event)">
+  <div class="modal" id="rest-modal">
+    <div class="modal-head">
+      <div>
+        <div class="modal-title" id="rest-modal-name"></div>
+        <div style="font-size:12px;color:var(--gr);margin-top:4px" id="rest-modal-meta"></div>
+      </div>
+      <button class="modal-close" onclick="closeOverlay('rest-overlay')">✕</button>
+    </div>
+    <div class="modal-body" id="rest-modal-body"></div>
+  </div>
+</div>
+
+<!-- ── CART MODAL ── -->
+<div class="overlay" id="cart-overlay" onclick="closeRestModal(event)">
+  <div class="modal" id="cart-modal">
+    <div class="modal-head">
+      <div class="modal-title">🛒 Mon panier</div>
+      <button class="modal-close" onclick="closeOverlay('cart-overlay')">✕</button>
+    </div>
+    <div class="modal-body" id="cart-body"></div>
+  </div>
+</div>
+
+<!-- ── TRACK MODAL ── -->
+<div class="overlay" id="track-overlay" onclick="closeRestModal(event)">
+  <div class="modal" id="track-modal">
+    <div class="modal-head">
+      <div class="modal-title">📍 Suivre ma commande</div>
+      <button class="modal-close" onclick="closeOverlay('track-overlay')">✕</button>
+    </div>
+    <div class="modal-body" id="track-body"></div>
+  </div>
+</div>
+
+<!-- APP LINKS -->
+<div class="app-links">
+  <span style="color:var(--gr);font-size:12px;font-weight:700">Rapido Delivery · Gabès</span>
+  <span class="app-link-sep">|</span>
+  <a class="app-link" href="rapido-driver.html">Application Livreur →</a>
+  <span class="app-link-sep">|</span>
+  <a class="app-link" href="rapido-admin.html">Administration →</a>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="rapido-backend.js"></script>
+<script>
+// ═══════════════════════════════════════════
+// RAPIDO CLIENT APP — fully async
+// ═══════════════════════════════════════════
+
+let currentCategory = '';
+let currentSearch   = '';
+let myOrderId       = localStorage.getItem('rapido_my_order') || null;
+let cart            = { restaurantId: null, restaurantName: '', items: [], deliveryFee: 2.5 };
+let trackingOrderId   = null;
+let lastTrackedStatus = null;
+let clientLocation    = null;   // { lat, lng } — set after GPS permission
+
+// Delivery fee config
+const FEE_BASE    = 1.0;   // DT minimum
+const FEE_PER_KM  = 1.0;   // DT per km
+const FEE_MAX     = 10.0;   // DT ceiling
+const FEE_FREE_KM = 1.0;   // no extra charge under this distance
+
+// Background gradient classes for restaurant cards
+const imgClasses = ['img-1','img-2','img-3','img-4','img-5','img-6'];
+
+// ── DELIVERY FEE ENGINE ──────────────────
+function haversineKm(lat1, lng1, lat2, lng2) {
+  const R = 6371;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const a = Math.sin(dLat/2) ** 2 +
+    Math.cos(lat1 * Math.PI/180) * Math.cos(lat2 * Math.PI/180) *
+    Math.sin(dLng/2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function calcFee(restLat, restLng, clientLat, clientLng) {
+  const km  = haversineKm(restLat, restLng, clientLat, clientLng);
+  const fee = km <= FEE_FREE_KM ? FEE_BASE : FEE_BASE + (km - FEE_FREE_KM) * FEE_PER_KM;
+  return { fee: Math.min(Math.max(fee, FEE_BASE), FEE_MAX), km };
+}
+
+// Try to get client GPS — silent, no error shown if denied
+function requestClientLocation() {
+  if (!navigator.geolocation) return;
+  navigator.geolocation.getCurrentPosition(
+    pos => {
+      clientLocation = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+      // Re-render restaurants with real distances now that we have location
+      renderRestaurants();
+    },
+    () => {
+      // Permission denied or unavailable — silently use fixed fee
+      clientLocation = null;
+    },
+    { timeout: 8000, maximumAge: 60000 }
+  );
+}
+
+// ── RESTAURANTS ───────────────────────────
+async function renderRestaurants() {
+  const restaurants = await RapidoDB.getRestaurants();
+  let filtered = restaurants;
+  if (currentCategory) filtered = filtered.filter(r => r.category === currentCategory);
+  if (currentSearch)   filtered = filtered.filter(r =>
+    r.name.toLowerCase().includes(currentSearch.toLowerCase()) ||
+    r.category.toLowerCase().includes(currentSearch.toLowerCase())
+  );
+
+  document.getElementById('rest-title').textContent =
+    currentCategory ? currentCategory : 'Tous les restaurants (' + filtered.length + ')';
+
+  if (filtered.length === 0) {
+    document.getElementById('rest-grid').innerHTML =
+      '<div class="empty"><div class="empty-icon">🍽️</div><div class="empty-txt">Aucun restaurant trouvé</div></div>';
+    return;
+  }
+
+  document.getElementById('rest-grid').innerHTML = filtered.map((r, i) => {
+    // Calculate dynamic fee if we have client location and restaurant coords
+    let feeDisplay, distDisplay, etaDisplay;
+    if (clientLocation && r.lat && r.lng) {
+      const { fee, km } = calcFee(r.lat, r.lng, clientLocation.lat, clientLocation.lng);
+      feeDisplay  = fee.toFixed(1) + ' DT';
+      distDisplay = km < 1 ? Math.round(km * 1000) + ' m' : km.toFixed(1) + ' km';
+      // ETA: prep time + 3 min/km driving
+      const etaMin = r.prepTime + Math.ceil(km * 3);
+      etaDisplay  = etaMin + ' min';
+    } else {
+      feeDisplay  = r.deliveryFee.toFixed(1) + ' DT';
+      distDisplay = null;
+      etaDisplay  = r.prepTime + ' min';
+    }
+    const statusKey = r.status === 'open' ? 'open' : r.status === 'busy' ? 'busy' : 'closed';
+    const statusTxt = r.status === 'open' ? 'Ouvert' : r.status === 'busy' ? 'Chargé' : 'Fermé';
+    return `
+    <div class="rest-card" onclick="openRestaurant(${r.id})">
+      <div class="rest-img ${imgClasses[(r.id - 1) % imgClasses.length]}">
+        <span style="font-size:52px">${r.emoji}</span>
+        <div class="rest-badge">
+          <span class="badge badge-${statusKey}">${statusTxt}</span>
+        </div>
+        ${distDisplay ? `<div style="position:absolute;bottom:8px;right:8px;background:rgba(0,0,0,.55);color:#fff;font-size:11px;font-weight:800;padding:3px 8px;border-radius:8px">📍 ${distDisplay}</div>` : ''}
+      </div>
+      <div class="rest-info">
+        <div class="rest-name">${r.emoji} ${r.name}</div>
+        <div class="rest-sub">
+          <span>⭐ ${r.rating}</span>
+          <span>⏱ ${etaDisplay}</span>
+          <span>🛵 ${feeDisplay}</span>
+        </div>
+        <div class="rest-tags">
+          <span class="rest-tag">${r.category}</span>
+          <span class="rest-tag">${r.address}</span>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function setCategory(el, cat) {
+  document.querySelectorAll('.cat').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  currentCategory = cat;
+  renderRestaurants();
+}
+
+function filterRestaurants(val) {
+  currentSearch = val;
+  renderRestaurants();
+}
+
+// ── OPEN RESTAURANT MODAL ────────────────
+async function openRestaurant(id) {
+  const r = await RapidoDB.getRestaurant(id);
+  if (!r) return;
+  // Compute real delivery fee for this restaurant
+  let dynamicFee = r.deliveryFee;
+  let distStr    = '';
+  let etaStr     = r.prepTime + ' min';
+  if (clientLocation && r.lat && r.lng) {
+    const { fee, km } = calcFee(r.lat, r.lng, clientLocation.lat, clientLocation.lng);
+    dynamicFee = fee;
+    distStr    = ' · 📍 ' + (km < 1 ? Math.round(km * 1000) + ' m' : km.toFixed(1) + ' km');
+    etaStr     = (r.prepTime + Math.ceil(km * 3)) + ' min';
+  }
+  document.getElementById('rest-modal-name').textContent = r.emoji + ' ' + r.name;
+  document.getElementById('rest-modal-meta').textContent =
+    '⭐ ' + r.rating + '  ·  ⏱ ' + etaStr + '  ·  🛵 ' + dynamicFee.toFixed(1) + ' DT livraison' + distStr + '  ·  ' + r.address;
+
+  let html = '';
+  if (cart.restaurantId && cart.restaurantId !== id && cart.items.length > 0) {
+    html += `<div style="background:#FAEEDA;border-radius:12px;padding:12px 16px;margin-bottom:1rem;font-size:13px;color:var(--am);font-weight:700">
+      ⚠️ Votre panier contient des articles de ${cart.restaurantName}. Commencer ici videra le panier.
+    </div>`;
+  }
+  html += (r.menu || []).map(item => `
+    <div class="menu-item">
+      <div class="menu-item-info">
+        <div class="menu-item-name">${item.name}</div>
+        <div class="menu-item-desc">${item.desc || ''}</div>
+      </div>
+      <div class="menu-item-price">${item.price.toFixed(1)} DT</div>
+      <button class="add-btn"
+        onclick="addToCart(${id},'${r.name.replace(/'/g,"\\'")}',${r.deliveryFee},'${item.name.replace(/'/g,"\\'")}',${item.price})">+</button>
+    </div>
+  `).join('');
+
+  document.getElementById('rest-modal-body').innerHTML = html;
+  document.getElementById('rest-overlay').classList.add('open');
+}
+
+function closeOverlay(id) { document.getElementById(id)?.classList.remove('open'); }
+function closeRestModal(e) { if (e.target === e.currentTarget) e.currentTarget.classList.remove('open'); }
+
+// ── CART ──────────────────────────────────
+function addToCart(restId, restName, deliveryFee, itemName, price) {
+  if (cart.restaurantId && cart.restaurantId !== restId) {
+    cart = { restaurantId: restId, restaurantName: restName, items: [], deliveryFee };
+  }
+  if (!cart.restaurantId) { cart.restaurantId = restId; cart.restaurantName = restName; cart.deliveryFee = deliveryFee; }
+  const existing = cart.items.find(i => i.name === itemName);
+  if (existing) existing.qty++;
+  else cart.items.push({ name: itemName, price, qty: 1 });
+  updateCartCount();
+  showToast('✓ ' + itemName + ' ajouté au panier');
+}
+
+function updateCartCount() {
+  const total = cart.items.reduce((s, i) => s + i.qty, 0);
+  document.getElementById('cart-count').textContent = total;
+}
+
+function showCartModal() {
+  const body = document.getElementById('cart-body');
+  if (cart.items.length === 0) {
+    body.innerHTML = '<div class="empty"><div class="empty-icon">🛒</div><div class="empty-txt">Votre panier est vide</div></div>';
+    document.getElementById('cart-overlay').classList.add('open');
+    return;
+  }
+  const subtotal = cart.items.reduce((s, i) => s + i.price * i.qty, 0);
+  const total    = subtotal + cart.deliveryFee;
+
+  body.innerHTML = `
+    <div style="font-size:13px;font-weight:700;color:var(--gr);margin-bottom:.8rem">📍 ${cart.restaurantName}</div>
+    ${cart.items.map((item, idx) => `
+      <div class="cart-item">
+        <div>
+          <div class="cart-item-name">${item.name}</div>
+          <div style="font-size:12px;color:var(--gr)">${item.price.toFixed(1)} DT × ${item.qty}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px">
+          <div class="cart-qty">
+            <button class="qty-btn" onclick="changeQty(${idx},-1)">−</button>
+            <span class="qty-num">${item.qty}</span>
+            <button class="qty-btn" onclick="changeQty(${idx},1)">+</button>
+          </div>
+          <div class="cart-item-price">${(item.price * item.qty).toFixed(1)} DT</div>
+        </div>
+      </div>
+    `).join('')}
+    <div style="margin-top:1rem">
+      <div class="total-row"><span>Sous-total</span><span>${subtotal.toFixed(1)} DT</span></div>
+      <div class="total-row">
+        <span>Livraison ${clientLocation ? '<span style="font-size:11px;color:var(--gr);font-weight:600">(calculée selon distance)</span>' : ''}</span>
+        <span>${cart.deliveryFee.toFixed(1)} DT</span>
+      </div>
+      <div class="total-row grand"><span>Total</span><span>${total.toFixed(1)} DT</span></div>
+    </div>
+    <div style="margin-top:1.2rem">
+      <label class="form-label">Nom complet</label>
+      <input class="form-control" id="ch-name" placeholder="Mariem Ben Ali"/>
+      <label class="form-label">Adresse de livraison</label>
+      <input class="form-control" id="ch-addr" placeholder="Rue Ibn Khaldoun, Gabès..."/>
+      <label class="form-label">Téléphone</label>
+      <input class="form-control" id="ch-phone" placeholder="+216 xx xxx xxx"/>
+      <label class="form-label">Paiement</label>
+      <select class="form-control" id="ch-pay">
+        <option>Cash à la livraison</option>
+        <option>Paiement en ligne</option>
+      </select>
+      <button class="btn btn-primary" onclick="placeOrder()">
+        ✅ Confirmer la commande (${total.toFixed(1)} DT)
+      </button>
+    </div>
+  `;
+  document.getElementById('cart-overlay').classList.add('open');
+}
+
+function changeQty(idx, delta) {
+  cart.items[idx].qty += delta;
+  if (cart.items[idx].qty <= 0) cart.items.splice(idx, 1);
+  updateCartCount();
+  if (cart.items.length === 0) { closeOverlay('cart-overlay'); return; }
+  showCartModal();
+}
+
+async function placeOrder() {
+  const name  = document.getElementById('ch-name').value.trim();
+  const addr  = document.getElementById('ch-addr').value.trim();
+  const phone = document.getElementById('ch-phone').value.trim();
+  if (!name || !addr || !phone) { showToast('⚠️ Remplissez tous les champs'); return; }
+
+  const btn = document.querySelector('#cart-overlay .btn-primary');
+  if (btn) { btn.disabled = true; btn.textContent = 'Envoi en cours...'; }
+
+  const order = await RapidoDB.addOrder({
+    customer: name, phone,
+    restaurant: cart.restaurantName,
+    restaurantId: cart.restaurantId,
+    items: cart.items.map(i => ({ name: i.name, price: i.price, qty: i.qty })),
+    total: cart.items.reduce((s, i) => s + i.price * i.qty, 0),
+    deliveryFee: cart.deliveryFee,
+    address: addr,
+  });
+
+  myOrderId = order.id;
+  localStorage.setItem('rapido_my_order', order.id);
+  cart = { restaurantId: null, restaurantName: '', items: [], deliveryFee: 2.5 };
+  updateCartCount();
+  closeOverlay('cart-overlay');
+  showToast('🎉 Commande ' + order.id + ' passée !');
+  showTrackModal(order.id);
+}
+
+// ── ORDER TRACKING ────────────────────────
+async function showTrackModal(orderId) {
+  const id   = orderId || myOrderId;
+  const body = document.getElementById('track-body');
+
+  if (!id) {
+    trackingOrderId = null;
+    body.innerHTML = `
+      <div style="margin-bottom:1rem">
+        <label class="form-label">Numéro de commande</label>
+        <input class="form-control" id="track-input" placeholder="RP-2041" value="${myOrderId || ''}"/>
+        <button class="btn btn-primary" style="margin-top:.5rem"
+          onclick="showTrackModal(document.getElementById('track-input').value.trim())">
+          📍 Suivre →
+        </button>
+      </div>
+      ${myOrderId ? `<button class="btn btn-outline" onclick="showTrackModal('${myOrderId}')">Ma dernière commande (${myOrderId})</button>` : ''}
+    `;
+    document.getElementById('track-overlay').classList.add('open');
+    return;
+  }
+
+  trackingOrderId = id;
+  await renderTrackBody(id);
+  document.getElementById('track-overlay').classList.add('open');
+}
+
+async function renderTrackBody(id) {
+  const body  = document.getElementById('track-body');
+  const order = await RapidoDB.getOrder(id);
+
+  if (!order) {
+    body.innerHTML = `<div class="empty"><div class="empty-icon">❓</div>
+      <div class="empty-txt">Commande "${id}" introuvable</div>
+      <button class="btn btn-outline" style="margin-top:1rem;width:auto;padding:8px 20px"
+        onclick="showTrackModal(null)">Chercher une autre</button></div>`;
+    return;
+  }
+
+  const statusLabel = { pending:'En attente', accepted:'Acceptée', preparing:'En préparation', on_the_way:'En route', delivered:'Livrée', cancelled:'Annulée' };
+  const badgeCls    = { pending:'badge-busy', accepted:'badge-open', preparing:'badge-open', on_the_way:'badge-open', delivered:'badge-open', cancelled:'badge-closed' };
+  const steps       = ['pending','accepted','on_the_way','delivered'];
+  const curIdx      = steps.indexOf(['preparing'].includes(order.status) ? 'accepted' : order.status);
+  const driver      = order.driverId ? await RapidoDB.getDriver(order.driverId) : null;
+  const isDelivered = order.status === 'delivered';
+  const isCancelled = order.status === 'cancelled';
+  const isMoving    = order.status === 'on_the_way';
+
+  // Status changed — notify
+  if (lastTrackedStatus && lastTrackedStatus !== order.status) {
+    const msgs = { on_the_way:'🛵 Votre commande est en route!', delivered:'🎉 Livrée! Bon appétit!', cancelled:'❌ Commande annulée.' };
+    if (msgs[order.status]) showToast(msgs[order.status]);
+  }
+  lastTrackedStatus = order.status;
+
+  body.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:1rem">
+      <div>
+        <div style="font-size:20px;font-weight:800">${order.id}</div>
+        <div style="font-size:13px;color:var(--gr)">${order.restaurant}</div>
+      </div>
+      <span class="badge ${badgeCls[order.status]||'badge-busy'}" style="font-size:13px;padding:5px 14px">
+        ${statusLabel[order.status]||order.status}
+      </span>
+    </div>
+
+    ${isCancelled ? `<div style="background:#FEEBEB;border-radius:12px;padding:14px;margin-bottom:1rem;font-size:14px;color:var(--rd);font-weight:700;text-align:center">
+      ❌ Cette commande a été annulée.
+    </div>` : ''}
+
+    ${!isCancelled ? `
+    <!-- Leaflet Map -->
+    <div class="map-mock" style="border-radius:14px;height:200px;overflow:hidden;margin-bottom:1rem;border:1.5px solid var(--gr2)">
+      <div id="track-map" style="width:100%;height:100%"></div>
+    </div>` : ''}
+
+    ${!isCancelled ? `
+    <div class="steps">
+      ${['En attente','Acceptée','En route','Livrée'].map((lbl, i) => `
+        <div class="step">
+          ${i > 0 ? `<div class="step-line ${i <= curIdx ? 'done' : ''}"></div>` : ''}
+          <div class="step-dot ${i < curIdx ? 'done' : i === curIdx ? 'active' : ''}">
+            ${i < curIdx ? '✓' : ['⏳','✅','🛵','🏠'][i]}
+          </div>
+          <div class="step-label ${i <= curIdx ? 'done' : ''}">${lbl}</div>
+        </div>`).join('')}
+    </div>` : ''}
+
+    ${driver && !isCancelled ? `
+    <div style="background:var(--cl);border-radius:12px;padding:14px 16px;margin-top:.5rem;display:flex;justify-content:space-between;align-items:center">
+      <div>
+        <div style="font-weight:800;font-size:14px">🛵 ${driver.name}</div>
+        <div style="font-size:12px;color:var(--gr);margin-top:2px">⭐ ${driver.rating} · ${driver.vehicle}</div>
+      </div>
+      <a href="tel:${driver.phone}" style="background:var(--c);color:var(--dk);padding:8px 16px;border-radius:12px;font-weight:800;font-size:13px;text-decoration:none">📞 Appeler</a>
+    </div>` : order.status === 'pending' ? `
+    <div style="background:#FAEEDA;border-radius:12px;padding:12px 16px;font-size:13px;color:var(--am);font-weight:700;margin-top:.5rem;display:flex;align-items:center;gap:8px">
+      <span style="font-size:18px">⏳</span> Attribution d'un livreur en cours...
+    </div>` : ''}
+
+    <div style="margin-top:1.2rem;padding:1rem;background:var(--bg);border-radius:12px;font-size:13px">
+      <div style="display:flex;justify-content:space-between;padding:4px 0"><span style="color:var(--gr)">Adresse</span><span style="font-weight:700;max-width:200px;text-align:right">${order.address}</span></div>
+      <div style="display:flex;justify-content:space-between;padding:4px 0"><span style="color:var(--gr)">Articles</span><span style="font-weight:700;text-align:right;max-width:180px">${order.items.map(i=>i.name+(i.qty>1?'×'+i.qty:'')).join(', ')}</span></div>
+      <div style="display:flex;justify-content:space-between;padding:8px 0 4px;border-top:1px solid var(--gr2);margin-top:4px"><span style="font-weight:800">Total payé</span><span style="font-weight:800;color:var(--cd)">${(order.total + order.deliveryFee).toFixed(1)} DT</span></div>
+    </div>
+
+    ${isDelivered && !order.rating ? `
+    <div style="margin-top:1rem;padding:1rem;background:var(--wh);border:2px solid var(--c);border-radius:14px;text-align:center">
+      <div style="font-weight:800;margin-bottom:.5rem">Comment était votre livraison ?</div>
+      <div class="stars" id="stars" style="justify-content:center">
+        ${[1,2,3,4,5].map(s=>`<span class="star" style="cursor:pointer;font-size:24px" onclick="rateOrder('${order.id}',${s})">⭐</span>`).join('')}
+      </div>
+    </div>` : ''}
+
+    ${isDelivered && order.rating ? `
+    <div style="margin-top:1rem;background:var(--cl);border-radius:12px;padding:12px;text-align:center;font-size:13px;font-weight:700">
+      Merci pour votre avis ! ${'⭐'.repeat(order.rating)}
+    </div>` : ''}
+
+    <button class="btn btn-outline" style="margin-top:1rem" onclick="showTrackModal(null)">
+      🔍 Suivre une autre commande
+    </button>
+  `;
+
+  // ── Init Leaflet map ──
+  if (!isCancelled) {
+    setTimeout(async () => {
+      const mapEl = document.getElementById('track-map');
+      if (!mapEl || typeof L === 'undefined') return;
+      if (window._trackMap) { window._trackMap.remove(); window._trackMap = null; }
+
+      const rest    = await RapidoDB.getRestaurant(order.restaurantId);
+      const restLat = rest?.lat  || 33.8847;
+      const restLng = rest?.lng  || 10.0966;
+      const cliLat  = 33.8795 + (Math.random() - .5) * .012;
+      const cliLng  = 10.0948 + (Math.random() - .5) * .012;
+
+      window._trackMap = L.map('track-map', { zoomControl: false, attributionControl: false });
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(window._trackMap);
+
+      const icon = (emoji, bg) => L.divIcon({
+        html: `<div style="background:${bg};width:34px;height:34px;border-radius:50%;border:3px solid white;display:flex;align-items:center;justify-content:center;font-size:15px;box-shadow:0 2px 6px rgba(0,0,0,.25)">${emoji}</div>`,
+        iconSize: [34,34], iconAnchor: [17,17], className: ''
+      });
+
+      L.marker([restLat, restLng], { icon: icon('🍽️','#00C9B1') }).addTo(window._trackMap).bindPopup(order.restaurant);
+      L.marker([cliLat,  cliLng],  { icon: icon('🏠','#E24B4A') }).addTo(window._trackMap).bindPopup('Chez vous');
+
+      if (isMoving && driver) {
+        const drvLat = restLat + (cliLat - restLat) * .4;
+        const drvLng = restLng + (cliLng - restLng) * .4;
+        window._trackDriverMarker = L.marker([drvLat, drvLng], { icon: icon('🛵','#1A2332') })
+          .addTo(window._trackMap).bindPopup(driver.name);
+        L.polyline([[restLat,restLng],[drvLat,drvLng],[cliLat,cliLng]],
+          { color:'#00C9B1', weight:3, dashArray:'8 4', opacity:.8 }).addTo(window._trackMap);
+        window._trackMap.fitBounds([[restLat,restLng],[cliLat,cliLng],[drvLat,drvLng]], { padding:[28,28] });
+      } else {
+        L.polyline([[restLat,restLng],[cliLat,cliLng]],
+          { color:'#00C9B1', weight:3, dashArray:'8 4', opacity:.6 }).addTo(window._trackMap);
+        window._trackMap.fitBounds([[restLat,restLng],[cliLat,cliLng]], { padding:[28,28] });
+      }
+    }, 150);
+  }
+}
+
+async function rateOrder(id, stars) {
+  await RapidoDB.updateOrder(id, { rating: stars });
+  showToast('⭐ Merci pour votre avis !');
+  renderTrackBody(id);
+}
+
+// ── TOAST ──────────────────────────────────
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+// ── INIT ───────────────────────────────────
+async function initClient() {
+  // Show loading state
+  document.getElementById('rest-grid').innerHTML =
+    '<div style="text-align:center;padding:3rem;color:var(--gr)">Chargement des restaurants...</div>';
+
+  // Request GPS location — will re-render restaurants with real distances if granted
+  requestClientLocation();
+
+  await renderRestaurants();
+
+  const stats = await RapidoDB.getStats();
+  const el = document.getElementById('stat-orders');
+  if (el) el.textContent = stats.ordersToday;
+}
+
+initClient();
+
+// Live updates — refresh restaurants and tracking modal
+onRapidoUpdate(async (event, data) => {
+  await renderRestaurants();
+
+  // If tracking modal is open, refresh it
+  if (trackingOrderId && document.getElementById('track-overlay')?.classList.contains('open')) {
+    await renderTrackBody(trackingOrderId);
+  }
+
+  // Notify even if modal is closed
+  if (myOrderId && myOrderId !== trackingOrderId) {
+    const order = await RapidoDB.getOrder(myOrderId);
+    if (order && order.status !== lastTrackedStatus) {
+      const msgs = { on_the_way:'🛵 Votre commande est en route!', delivered:'🎉 Livrée! Bon appétit!', cancelled:'❌ Commande annulée.' };
+      if (msgs[order.status]) showToast(msgs[order.status]);
+      lastTrackedStatus = order.status;
+    }
+  }
+});
+</script>
+</body>
+</html>

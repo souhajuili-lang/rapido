@@ -1,0 +1,28 @@
+{
+  "name": "rapido",
+  "version": "2.0.0",
+  "description": "Rapido Delivery — Production backend (PostgreSQL)",
+  "main": "server.js",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "db:init": "psql $DATABASE_URL -f schema.sql"
+  },
+  "keywords": [
+    "delivery",
+    "food",
+    "tunisia"
+  ],
+  "license": "ISC",
+  "dependencies": {
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "jsonwebtoken": "^9.0.3",
+    "pg": "^8.13.3",
+    "socket.io": "^4.8.3"
+  }
+}
