@@ -714,12 +714,35 @@ async function completeDelivery(orderId) {
 }
 
 // ── GPS BROADCAST ─────────────────────────
+let _gpsSocket = null;
+
 function startGPS() {
   if (!navigator.geolocation) return;
+
+  // Connect socket for live GPS broadcast
+  try {
+    const BACKEND = (typeof RAPIDO_API !== 'undefined' ? RAPIDO_API : '') || window.location.origin;
+    _gpsSocket = io(BACKEND, { transports: ['websocket','polling'] });
+    // Join driver room so server can target this driver
+    _gpsSocket.on('connect', () => {
+      _gpsSocket.emit('driver:join', { driverId, token: RapidoAuth.getToken() });
+    });
+  } catch(e) { console.warn('GPS socket init failed', e); }
+
   navigator.geolocation.watchPosition(pos => {
     const { latitude: lat, longitude: lng } = pos.coords;
+    // Update DB
     RapidoDB.updateDriver(driverId, { lat, lng });
-    if (typeof broadcastDriverPosition !== 'undefined') broadcastDriverPosition(driverId, lat, lng);
+    // Broadcast via Socket.io so admin map updates live
+    if (_gpsSocket?.connected) {
+      _gpsSocket.emit('driver:position', {
+        driverId,
+        lat,
+        lng,
+        token: RapidoAuth.getToken()
+      });
+    }
+    // Move marker on driver's own active-delivery map
     if (_driverMarker2) _driverMarker2.setLatLng([lat, lng]);
   }, null, { enableHighAccuracy: true, maximumAge: 5000 });
 }

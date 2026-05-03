@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Rapido — Administration</title>
 <link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
@@ -339,31 +341,16 @@ select.form-control{cursor:pointer}
 
 <!-- ═══ MAP ═══ -->
 <div id="view-map" style="display:none">
-  <div style="font-size:18px;font-weight:900;margin-bottom:1rem">🗺️ Carte en temps réel · Gabès</div>
-  <div class="map-panel" id="live-map">
-    <div class="map-road map-road-h" style="top:30%"></div>
-    <div class="map-road map-road-h" style="top:55%"></div>
-    <div class="map-road map-road-h" style="top:75%"></div>
-    <div class="map-road map-road-v" style="left:25%"></div>
-    <div class="map-road map-road-v" style="left:50%"></div>
-    <div class="map-road map-road-v" style="left:75%"></div>
-    <!-- Restaurants -->
-    <div class="map-rest-pin" style="left:22%;top:24%" title="Pizza Roma">🍕</div>
-    <div class="map-lbl" style="left:calc(22% + 28px);top:24%">Pizza Roma</div>
-    <div class="map-rest-pin" style="left:48%;top:50%" title="Shawarma House">🥙</div>
-    <div class="map-rest-pin" style="left:72%;top:26%" title="Brik & Lablabi">🧆</div>
-    <div class="map-rest-pin" style="left:35%;top:70%" title="Burger District">🍔</div>
-    <!-- Drivers -->
-    <div class="map-driver-pin" style="left:38%;top:36%" title="Ahmed" onclick="showDriverDetails(1)">🛵</div>
-    <div class="map-lbl" style="left:calc(38% + 36px);top:34%">Ahmed</div>
-    <div class="map-driver-pin" style="left:58%;top:58%" title="Khalil" onclick="showDriverDetails(2)">🛵</div>
-    <div class="map-lbl" style="left:calc(58% + 36px);top:56%">Khalil</div>
-    <div class="map-driver-pin" style="left:20%;top:62%" title="Rim" onclick="showDriverDetails(3)">🛵</div>
-    <!-- Legend -->
-    <div class="map-legend">
-      <div class="legend-row"><span style="width:12px;height:12px;background:var(--dk);border-radius:50%;border:2px solid var(--c);display:inline-block"></span>Livreur actif</div>
-      <div class="legend-row"><span style="width:12px;height:12px;background:var(--c);border-radius:50%;display:inline-block"></span>Restaurant</div>
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+    <div style="font-size:18px;font-weight:900">🗺️ Carte en temps réel · Gabès</div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <div class="live-dot"></div>
+      <span style="font-size:12px;font-weight:700;color:var(--gn)">Mise à jour en direct</span>
     </div>
+  </div>
+  <!-- Real Leaflet map -->
+  <div style="border-radius:var(--r);overflow:hidden;border:1px solid var(--gr2);box-shadow:var(--sh)">
+    <div id="admin-leaflet-map" style="height:420px;width:100%;background:#E8F5F2"></div>
   </div>
   <div style="margin-top:1rem;display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:.8rem" id="map-driver-cards"></div>
 </div>
@@ -706,9 +693,85 @@ async function renderReports() {
     </tr>`).join('');
 }
 
-// ── MAP DRIVERS ──
+// ── ADMIN LIVE MAP ──
+let _adminMap = null;
+let _adminDriverMarkers = {};   // { driverId: L.marker }
+let _adminRestMarkers   = [];
+let _adminSocket        = null;
+
 async function renderMapDrivers() {
-  const drivers = await RapidoDB.getDrivers();
+  const [drivers, restaurants] = await Promise.all([RapidoDB.getDrivers(), RapidoDB.getRestaurants()]);
+
+  // ── Init Leaflet map once ──
+  if (!_adminMap) {
+    _adminMap = L.map('admin-leaflet-map', { zoomControl: true, attributionControl: false })
+      .setView([33.8831, 10.0966], 14);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(_adminMap);
+
+    // ── Place restaurant markers ──
+    restaurants.forEach(r => {
+      if (!r.lat || !r.lng) return;
+      const icon = L.divIcon({
+        html: `<div style="background:#00C9B1;width:34px;height:34px;border-radius:50%;border:3px solid white;display:flex;align-items:center;justify-content:center;font-size:16px;box-shadow:0 2px 8px rgba(0,0,0,.25)">${r.emoji}</div>`,
+        iconSize: [34,34], iconAnchor: [17,17], className: ''
+      });
+      L.marker([r.lat, r.lng], { icon })
+        .addTo(_adminMap)
+        .bindPopup(`<strong>${r.name}</strong><br>${r.category} · ${r.address}`);
+    });
+
+    // ── Connect Socket.io for live driver positions ──
+    try {
+      const BACKEND = (typeof RAPIDO_API !== 'undefined' ? RAPIDO_API : '') || window.location.origin;
+      _adminSocket = io(BACKEND, { transports: ['websocket','polling'] });
+      _adminSocket.on('driver:position', ({ driverId, lat, lng }) => {
+        if (_adminDriverMarkers[driverId]) {
+          _adminDriverMarkers[driverId].setLatLng([lat, lng]);
+        }
+      });
+    } catch(e) { console.warn('Admin map socket failed', e); }
+  }
+
+  // ── Driver icon helper ──
+  const driverIcon = (name, status) => {
+    const color = status === 'online' ? '#1D9E75' : status === 'busy' ? '#D4831A' : '#607D8B';
+    return L.divIcon({
+      html: `<div style="background:#1A2332;width:38px;height:38px;border-radius:50%;border:3px solid ${color};display:flex;align-items:center;justify-content:center;font-size:17px;box-shadow:0 2px 10px rgba(0,0,0,.35)">🛵</div>
+             <div style="background:#1A2332;color:white;font-size:10px;font-weight:800;text-align:center;border-radius:6px;padding:2px 6px;margin-top:2px;white-space:nowrap;border:1px solid ${color}">${name.split(' ')[0]}</div>`,
+      iconSize: [38, 54], iconAnchor: [19, 19], className: ''
+    });
+  };
+
+  // ── Place / update driver markers ──
+  const seen = new Set();
+  drivers.forEach(d => {
+    if (d.status === 'offline') return;
+    seen.add(d.id);
+    const lat = d.lat || (33.8831 + (Math.random()-.5)*.01);
+    const lng = d.lng || (10.0966 + (Math.random()-.5)*.01);
+    const statusTxt = { online:'En ligne', busy:'En livraison', offline:'Hors ligne' }[d.status];
+    const popup = `<strong>${d.name}</strong><br>${statusTxt} · ⭐${d.rating}<br>${d.vehicle} · Zone ${d.zone}<br>📦 ${d.deliveriesToday} livraisons auj.`;
+
+    if (_adminDriverMarkers[d.id]) {
+      _adminDriverMarkers[d.id].setLatLng([lat, lng]).setIcon(driverIcon(d.name, d.status)).bindPopup(popup);
+    } else {
+      _adminDriverMarkers[d.id] = L.marker([lat, lng], { icon: driverIcon(d.name, d.status) })
+        .addTo(_adminMap).bindPopup(popup);
+    }
+  });
+
+  // Remove offline drivers from map
+  Object.keys(_adminDriverMarkers).forEach(id => {
+    if (!seen.has(parseInt(id))) {
+      _adminMap.removeLayer(_adminDriverMarkers[id]);
+      delete _adminDriverMarkers[id];
+    }
+  });
+
+  // Fix map render (needed when tab was hidden on init)
+  setTimeout(() => _adminMap && _adminMap.invalidateSize(), 120);
+
+  // ── Driver cards below map ──
   document.getElementById('map-driver-cards').innerHTML = drivers.filter(d => d.status !== 'offline').map(d => `
     <div class="card" style="padding:.9rem">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:.5rem">
@@ -717,6 +780,7 @@ async function renderMapDrivers() {
         <span class="badge ${driverStatusClass[d.status]}" style="margin-left:auto">${driverStatusLabel[d.status]}</span>
       </div>
       <div style="font-size:12px;color:var(--gr)">📦 ${d.deliveriesToday} livraisons · ⭐${d.rating}</div>
+      ${d.lat ? `<div style="font-size:10px;color:var(--gr);margin-top:3px">📍 GPS actif</div>` : '<div style="font-size:10px;color:var(--am);margin-top:3px">📍 GPS en attente</div>'}
     </div>`).join('') || '<div style="color:var(--gr);text-align:center;padding:2rem">Aucun livreur actif</div>';
 }
 
@@ -977,7 +1041,26 @@ function _initAdmin() {
     if (viewId === 'orders')      renderOrdersTable().catch(console.error);
     if (viewId === 'drivers')     renderDriversTable().catch(console.error);
     if (viewId === 'restaurants') renderRestaurantsTable().catch(console.error);
+    if (viewId === 'map')         renderMapDrivers().catch(console.error);
   });
+
+  // Listen for live driver GPS positions from Socket.io
+  try {
+    const BACKEND = (typeof RAPIDO_API !== 'undefined' ? RAPIDO_API : '') || window.location.origin;
+    const _adminInitSocket = io(BACKEND, { transports: ['websocket','polling'] });
+    _adminInitSocket.on('driver:position', ({ driverId, lat, lng }) => {
+      // Update marker if admin map is open
+      if (_adminDriverMarkers && _adminDriverMarkers[driverId]) {
+        _adminDriverMarkers[driverId].setLatLng([lat, lng]);
+      }
+      // Update driver cards GPS indicator
+      const cards = document.getElementById('map-driver-cards');
+      if (cards) {
+        const indicator = cards.querySelector(`[data-driver-gps="${driverId}"]`);
+        if (indicator) indicator.textContent = '📍 GPS actif';
+      }
+    });
+  } catch(e) { console.warn('Admin socket init failed', e); }
 }
 
 function adminLogout() {

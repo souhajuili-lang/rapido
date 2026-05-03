@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Rapido — Commander à manger</title>
 <link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 :root{
@@ -746,6 +747,8 @@ async function renderTrackBody(id) {
         L.polyline([[restLat,restLng],[drvLat,drvLng],[cliLat,cliLng]],
           { color:'#00C9B1', weight:3, dashArray:'8 4', opacity:.8 }).addTo(window._trackMap);
         window._trackMap.fitBounds([[restLat,restLng],[cliLat,cliLng],[drvLat,drvLng]], { padding:[28,28] });
+        // Start live GPS tracking
+        startLiveTracking(order.driverId);
       } else {
         L.polyline([[restLat,restLng],[cliLat,cliLng]],
           { color:'#00C9B1', weight:3, dashArray:'8 4', opacity:.6 }).addTo(window._trackMap);
@@ -759,6 +762,32 @@ async function rateOrder(id, stars) {
   await RapidoDB.updateOrder(id, { rating: stars });
   showToast('⭐ Merci pour votre avis !');
   renderTrackBody(id);
+}
+
+// ── LIVE DRIVER TRACKING VIA SOCKET.IO ────
+let _trackSocket    = null;
+let _trackDriverId  = null;
+
+function startLiveTracking(driverId) {
+  if (_trackDriverId === driverId) return;   // already tracking this driver
+  stopLiveTracking();
+  _trackDriverId = driverId;
+  try {
+    const BACKEND = (typeof RAPIDO_API !== 'undefined' ? RAPIDO_API : '') || window.location.origin;
+    _trackSocket = io(BACKEND, { transports: ['websocket','polling'] });
+    _trackSocket.on('driver:position', ({ driverId: did, lat, lng }) => {
+      if (did !== driverId) return;
+      if (window._trackDriverMarker) {
+        window._trackDriverMarker.setLatLng([lat, lng]);
+        if (window._trackMap) window._trackMap.panTo([lat, lng]);
+      }
+    });
+  } catch(e) { console.warn('Track socket failed', e); }
+}
+
+function stopLiveTracking() {
+  if (_trackSocket) { try { _trackSocket.disconnect(); } catch(e) {} _trackSocket = null; }
+  _trackDriverId = null;
 }
 
 // ── TOAST ──────────────────────────────────
