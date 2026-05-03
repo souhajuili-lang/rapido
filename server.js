@@ -1,14 +1,5 @@
 require('dotenv').config();
-const rateLimit = require('express-rate-limit');
 
-// Limit login attempts — max 5 tries per 15 minutes per IP
-const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 5,
-  message: { error: 'Trop de tentatives. Réessayez dans 15 minutes.' }
-});
-
-app.use('/api/auth', authLimiter);
 const helmet = require('helmet');
 app.use(helmet({
   contentSecurityPolicy: false  // keep false so your HTML pages load correctly
@@ -29,6 +20,16 @@ const path       = require('path');
 const { Pool }   = require('pg');
 
 const app    = express();
+const rateLimit = require('express-rate-limit');
+
+// Limit login attempts — max 5 tries per 15 minutes per IP
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  message: { error: 'Trop de tentatives. Réessayez dans 15 minutes.' }
+});
+
+app.use('/api/auth', authLimiter);
 const server = http.createServer(app);
 const io     = new Server(server, { cors: { origin: '*' } });
 
