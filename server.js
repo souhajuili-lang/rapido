@@ -1,4 +1,14 @@
 require('dotenv').config();
+const rateLimit = require('express-rate-limit');
+
+// Limit login attempts — max 5 tries per 15 minutes per IP
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  message: { error: 'Trop de tentatives. Réessayez dans 15 minutes.' }
+});
+
+app.use('/api/auth', authLimiter);
 // ═══════════════════════════════════════════════════════════════
 // RAPIDO DELIVERY — Production Server (PostgreSQL)
 // Node.js + Express + Socket.io + pg (node-postgres)
