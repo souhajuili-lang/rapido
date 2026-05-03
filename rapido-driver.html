@@ -4,6 +4,17 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Rapido — App Livreur</title>
+<!-- PWA -->
+<link rel="manifest" href="rapido-driver.webmanifest">
+<meta name="theme-color" content="#0F1923">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="Rapido Livreur">
+<link rel="apple-touch-icon" href="rapido-icon-driver-512.png">
+<link rel="apple-touch-icon" sizes="192x192" href="rapido-icon-driver-192.png">
+<meta name="description" content="Application livreur Rapido — gérez vos livraisons en temps réel">
+<meta name="application-name" content="Rapido Livreur">
 <link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
@@ -820,6 +831,60 @@ function onStatusClick(status) { setStatus(status); }
 
 // ── INIT ──────────────────────────────────
 initApp();
+</script>
+
+<!-- ── PWA Service Worker Registration ── -->
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./rapido-sw.js', { scope: './' })
+      .then(reg => {
+        console.log('[Rapido Driver] SW registered');
+        setInterval(() => reg.update(), 60000);
+
+        reg.addEventListener('updatefound', () => {
+          const nw = reg.installing;
+          nw.addEventListener('statechange', () => {
+            if (nw.state === 'installed' && navigator.serviceWorker.controller) {
+              const b = document.createElement('div');
+              b.style.cssText = 'position:fixed;bottom:100px;left:50%;transform:translateX(-50%);z-index:9999;background:#1A2737;color:#fff;padding:10px 18px;border-radius:14px;font-family:Nunito,sans-serif;font-weight:700;font-size:13px;display:flex;gap:10px;align-items:center;border:1px solid rgba(0,201,177,.3);box-shadow:0 8px 32px rgba(0,0,0,.5);white-space:nowrap';
+              b.innerHTML = '<span>🆕 Mise à jour</span><button onclick="location.reload()" style="background:#00C9B1;border:none;color:#1A2332;padding:5px 14px;border-radius:8px;font-family:Nunito,sans-serif;font-weight:800;cursor:pointer;font-size:12px">Installer</button>';
+              document.body.appendChild(b);
+            }
+          });
+        });
+      })
+      .catch(err => console.warn('[Rapido Driver] SW failed:', err));
+  });
+}
+
+// Background sync for driver position when back online
+if ('serviceWorker' in navigator && 'SyncManager' in window) {
+  // Register background sync when position updates fail
+  window.addEventListener('online', () => {
+    navigator.serviceWorker.ready.then(reg => {
+      reg.sync.register('driver-position-sync').catch(() => {});
+    });
+  });
+}
+
+// Install prompt
+let _driverInstallPrompt;
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  _driverInstallPrompt = e;
+  // Show subtle install button in header area
+  const btn = document.createElement('button');
+  btn.style.cssText = 'position:fixed;top:12px;right:60px;z-index:300;background:rgba(0,201,177,.15);border:1px solid rgba(0,201,177,.4);color:#00C9B1;padding:5px 12px;border-radius:10px;font-family:Nunito,sans-serif;font-weight:800;font-size:11px;cursor:pointer';
+  btn.textContent = '📲 Installer';
+  btn.onclick = async () => {
+    _driverInstallPrompt.prompt();
+    const { outcome } = await _driverInstallPrompt.userChoice;
+    if (outcome === 'accepted') btn.remove();
+    _driverInstallPrompt = null;
+  };
+  document.body.appendChild(btn);
+});
 </script>
 </body>
 </html>

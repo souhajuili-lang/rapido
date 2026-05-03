@@ -1,0 +1,27 @@
+{
+  "name": "Rapido — App Livreur",
+  "short_name": "Rapido Livreur",
+  "description": "Application livreur Rapido — gérez vos livraisons en temps réel",
+  "start_url": "./rapido-driver.html",
+  "id": "./rapido-driver.html",
+  "display": "standalone",
+  "display_fallback": ["minimal-ui"],
+  "orientation": "portrait-primary",
+  "background_color": "#0F1923",
+  "theme_color": "#00C9B1",
+  "categories": ["business", "navigation"],
+  "lang": "fr",
+  "icons": [
+    { "src": "rapido-icon-driver-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "rapido-icon-driver-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "rapido-icon-driver-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    {
+      "name": "Mes livraisons",
+      "short_name": "Livraisons",
+      "url": "./rapido-driver.html",
+      "icons": [{ "src": "rapido-icon-driver-192.png", "sizes": "192x192" }]
+    }
+  ]
+}

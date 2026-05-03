@@ -11,7 +11,9 @@ app.use(helmet({
 
 'use strict';
 
-const express    = require('express');
+const express = require('express');
+// add this line with your other middleware:
+app.use(express.static('public'));
 const http       = require('http');
 const { Server } = require('socket.io');
 const jwt        = require('jsonwebtoken');

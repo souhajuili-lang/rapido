@@ -4,6 +4,17 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Rapido — Commander à manger</title>
+<!-- PWA -->
+<link rel="manifest" href="rapido-client.webmanifest">
+<meta name="theme-color" content="#00C9B1">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Rapido">
+<link rel="apple-touch-icon" href="rapido-icon-512.png">
+<link rel="apple-touch-icon" sizes="192x192" href="rapido-icon-192.png">
+<meta name="description" content="Commandez vos repas préférés livrés rapidement à Gabès">
+<meta name="application-name" content="Rapido">
 <link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
 <style>
@@ -833,6 +844,65 @@ onRapidoUpdate(async (event, data) => {
       lastTrackedStatus = order.status;
     }
   }
+});
+</script>
+
+<!-- ── PWA Service Worker Registration ── -->
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./rapido-sw.js', { scope: './' })
+      .then(reg => {
+        console.log('[Rapido] SW registered, scope:', reg.scope);
+
+        // Check for updates every 60s while app is open
+        setInterval(() => reg.update(), 60000);
+
+        // Notify user when a new version is ready
+        reg.addEventListener('updatefound', () => {
+          const newWorker = reg.installing;
+          newWorker.addEventListener('statechange', () => {
+            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+              showUpdateBanner();
+            }
+          });
+        });
+      })
+      .catch(err => console.warn('[Rapido] SW registration failed:', err));
+  });
+}
+
+function showUpdateBanner() {
+  const b = document.createElement('div');
+  b.style.cssText = 'position:fixed;bottom:70px;left:50%;transform:translateX(-50%);z-index:9999;background:#1A2332;color:#fff;padding:12px 20px;border-radius:14px;font-family:Nunito,sans-serif;font-weight:700;font-size:13px;display:flex;align-items:center;gap:12px;box-shadow:0 8px 32px rgba(0,0,0,.4);border:1px solid rgba(0,201,177,.3)';
+  b.innerHTML = '<span>🆕 Nouvelle version disponible</span><button onclick="location.reload()" style="background:#00C9B1;border:none;color:#1A2332;padding:6px 14px;border-radius:8px;font-family:Nunito,sans-serif;font-weight:800;cursor:pointer;font-size:12px">Mettre à jour</button><button onclick="this.parentNode.remove()" style="background:none;border:none;color:#8A9BB0;cursor:pointer;font-size:16px">✕</button>';
+  document.body.appendChild(b);
+}
+
+// Install prompt — show native "Add to home screen"
+let _deferredPrompt;
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  _deferredPrompt = e;
+  // Show subtle install CTA in nav if not already installed
+  const installBtn = document.createElement('button');
+  installBtn.className = 'nav-btn';
+  installBtn.innerHTML = '📲 Installer';
+  installBtn.style.cssText = 'animation:pulse 2s ease-in-out 3;';
+  installBtn.onclick = async () => {
+    if (!_deferredPrompt) return;
+    _deferredPrompt.prompt();
+    const { outcome } = await _deferredPrompt.userChoice;
+    if (outcome === 'accepted') installBtn.remove();
+    _deferredPrompt = null;
+  };
+  const navRight = document.querySelector('.nav-right');
+  if (navRight) navRight.prepend(installBtn);
+});
+
+window.addEventListener('appinstalled', () => {
+  _deferredPrompt = null;
+  document.querySelector('[onclick*="installer"]')?.remove();
 });
 </script>
 </body>
