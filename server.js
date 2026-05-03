@@ -9,6 +9,10 @@ const authLimiter = rateLimit({
 });
 
 app.use('/api/auth', authLimiter);
+const helmet = require('helmet');
+app.use(helmet({
+  contentSecurityPolicy: false  // keep false so your HTML pages load correctly
+}));
 // ═══════════════════════════════════════════════════════════════
 // RAPIDO DELIVERY — Production Server (PostgreSQL)
 // Node.js + Express + Socket.io + pg (node-postgres)
