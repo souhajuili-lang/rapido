@@ -2,8 +2,7 @@
 // RAPIDO DELIVERY — API Client (replaces localStorage backend)
 // Falls back to localStorage demo mode if server is unreachable.
 // ═══════════════════════════════════════════════════════════════
-
-const RAPIDO_API = window.RAPIDO_API_URL || 'http://localhost:3000';
+const RAPIDO_API = window.RAPIDO_API_URL || 'https://rapido-production.up.railway.app';
 const TOKEN_KEY  = 'rapido_token';
 const RAPIDO_KEY = 'rapido_db';
 const SOCKET_AVAILABLE = typeof io !== 'undefined';
